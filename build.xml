@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="hodoku" default="test" basedir=".">
+
+    <!-- ── Properties ───────────────────────────────────────────────────── -->
+    <property name="junit.version"  value="1.10.2"/>
+    <property name="junit.jar"      value="junit-platform-console-standalone-${junit.version}.jar"/>
+    <property name="junit.url"      value="https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit.version}/${junit.jar}"/>
+
+    <property name="src.dir"        value="${basedir}/src"/>
+    <property name="test.src.dir"   value="${basedir}/src/test/java"/>
+    <property name="build.dir"      value="${basedir}/bin"/>
+    <property name="lib.dir"        value="${basedir}/lib"/>
+    <property name="junit.jar.path" value="${lib.dir}/${junit.jar}"/>
+
+    <!-- ── clean ────────────────────────────────────────────────────────── -->
+    <target name="clean" description="Delete compiled classes">
+        <delete dir="${build.dir}"/>
+    </target>
+
+    <!-- ── download-junit ───────────────────────────────────────────────── -->
+    <target name="download-junit" description="Download JUnit 5 standalone JAR into lib/ if not present">
+        <mkdir dir="${lib.dir}"/>
+        <get src="${junit.url}"
+             dest="${junit.jar.path}"
+             skipexisting="true"
+             verbose="true"/>
+    </target>
+
+    <!-- ── compile ──────────────────────────────────────────────────────── -->
+    <target name="compile" depends="download-junit" description="Compile main and test sources">
+        <mkdir dir="${build.dir}"/>
+        <javac encoding="UTF-8" destdir="${build.dir}" includeantruntime="false">
+            <src path="${src.dir}"/>
+            <src path="${test.src.dir}"/>
+            <classpath>
+                <pathelement path="${junit.jar.path}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- ── test ─────────────────────────────────────────────────────────── -->
+    <target name="test" depends="compile" description="Run all JUnit 5 integration tests">
+        <java classname="org.junit.platform.console.ConsoleLauncher"
+              fork="true" failonerror="true">
+            <jvmarg value="-Djava.awt.headless=true"/>
+            <classpath>
+                <pathelement path="${build.dir}"/>
+                <pathelement path="${src.dir}"/>
+                <pathelement path="${junit.jar.path}"/>
+            </classpath>
+            <arg value="execute"/>
+            <arg value="--scan-classpath=${build.dir}"/>
+        </java>
+    </target>
+
+</project>
