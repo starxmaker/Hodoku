@@ -6,6 +6,14 @@
     <property name="junit.jar"      value="junit-platform-console-standalone-${junit.version}.jar"/>
     <property name="junit.url"      value="https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit.version}/${junit.jar}"/>
 
+    <property name="jacoco.version"     value="0.8.12"/>
+    <property name="jacoco.ant.jar"     value="org.jacoco.ant-${jacoco.version}-nodeps.jar"/>
+    <property name="jacoco.agent.jar"   value="org.jacoco.agent-${jacoco.version}-runtime.jar"/>
+    <property name="jacoco.ant.url"     value="https://repo1.maven.org/maven2/org/jacoco/org.jacoco.ant/${jacoco.version}/${jacoco.ant.jar}"/>
+    <property name="jacoco.agent.url"   value="https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/${jacoco.version}/${jacoco.agent.jar}"/>
+    <property name="jacoco.exec"        value="${basedir}/jacoco.exec"/>
+    <property name="reports.dir"        value="${basedir}/reports/coverage"/>
+
     <property name="src.dir"        value="${basedir}/src"/>
     <property name="test.src.dir"   value="${basedir}/src/test/java"/>
     <property name="build.dir"      value="${basedir}/bin"/>
@@ -22,6 +30,19 @@
         <mkdir dir="${lib.dir}"/>
         <get src="${junit.url}"
              dest="${junit.jar.path}"
+             skipexisting="true"
+             verbose="true"/>
+    </target>
+
+    <!-- ── download-jacoco ──────────────────────────────────────────────── -->
+    <target name="download-jacoco" description="Download JaCoCo Ant task + agent JARs into lib/ if not present">
+        <mkdir dir="${lib.dir}"/>
+        <get src="${jacoco.ant.url}"
+             dest="${lib.dir}/${jacoco.ant.jar}"
+             skipexisting="true"
+             verbose="true"/>
+        <get src="${jacoco.agent.url}"
+             dest="${lib.dir}/${jacoco.agent.jar}"
              skipexisting="true"
              verbose="true"/>
     </target>
@@ -51,6 +72,45 @@
             <arg value="execute"/>
             <arg value="--scan-classpath=${build.dir}"/>
         </java>
+    </target>
+
+    <!-- ── coverage ─────────────────────────────────────────────────────── -->
+    <target name="coverage" depends="compile,download-jacoco" description="Run tests under JaCoCo and generate HTML coverage report">
+        <taskdef uri="antlib:org.jacoco.ant"
+                 resource="org/jacoco/ant/antlib.xml"
+                 classpath="${lib.dir}/${jacoco.ant.jar}"/>
+        <jacoco:coverage xmlns:jacoco="antlib:org.jacoco.ant"
+                         destfile="${jacoco.exec}"
+                         includes="generator.*:solver.*">
+            <java classname="org.junit.platform.console.ConsoleLauncher"
+                  fork="true" failonerror="true">
+                <jvmarg value="-Djava.awt.headless=true"/>
+                <classpath>
+                    <pathelement path="${build.dir}"/>
+                    <pathelement path="${src.dir}"/>
+                    <pathelement path="${junit.jar.path}"/>
+                </classpath>
+                <arg value="execute"/>
+                <arg value="--scan-classpath=${build.dir}"/>
+            </java>
+        </jacoco:coverage>
+        <jacoco:report xmlns:jacoco="antlib:org.jacoco.ant">
+            <executiondata>
+                <file file="${jacoco.exec}"/>
+            </executiondata>
+            <structure name="Hodoku">
+                <classfiles>
+                    <fileset dir="${build.dir}"
+                             includes="generator/**/*.class,solver/**/*.class"
+                             excludes="**/*Test*.class"/>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="${src.dir}"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="${reports.dir}"/>
+        </jacoco:report>
+        <echo>Coverage report written to ${reports.dir}/index.html</echo>
     </target>
 
 </project>
