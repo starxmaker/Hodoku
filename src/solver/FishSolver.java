@@ -26,7 +26,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import sudoku.Candidate;
 import sudoku.Chain;
-import sudoku.FindAllStepsProgressDialog;
 import sudoku.Options;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
@@ -304,7 +303,7 @@ public class FishSolver extends AbstractSolver {
 	/** A set for cannibalistic eliminations in Kraken Fish */
 	private SudokuSet krakenCannibalisticSet = new SudokuSet();
 	/** A progress dialog for "find all steps" */
-	private FindAllStepsProgressDialog dlg = null;
+	private FishProgressListener dlg = null;
 	/** A global {@link SolutionStep}, speeds up search */
 	private SolutionStep globalStep = new SolutionStep(SolutionType.HIDDEN_SINGLE);
 	/** A {@link TablingSolver} for Kraken Fish search */
@@ -575,7 +574,7 @@ public class FishSolver extends AbstractSolver {
 	 * @return
 	 */
 	protected List<SolutionStep> getAllFishes(int minSize, int maxSize, int maxFins, int maxEndoFins,
-			FindAllStepsProgressDialog dlg, int forCandidate, int type) {
+			FishProgressListener dlg, int forCandidate, int type) {
 		this.dlg = dlg;
 		sudoku = finder.getSudoku();
 		int oldMaxFins = Options.getInstance().getMaxFins();
@@ -678,7 +677,7 @@ public class FishSolver extends AbstractSolver {
 
 	/**
 	 * Find all Kraken Fishes. Arguments see
-	 * {@link #getAllFishes(int, int, int, int, sudoku.FindAllStepsProgressDialog, int, int)}.
+	 * {@link #getAllFishes(int, int, int, int, solver.FishProgressListener, int, int)}.
 	 * 
 	 * @param minSize
 	 * @param maxSize
@@ -690,7 +689,7 @@ public class FishSolver extends AbstractSolver {
 	 * @return
 	 */
 	protected List<SolutionStep> getAllKrakenFishes(int minSize, int maxSize, int maxFins, int maxEndoFins,
-			FindAllStepsProgressDialog dlg, int forCandidate, int type) {
+			FishProgressListener dlg, int forCandidate, int type) {
 		tablingSolver = finder.getTablingSolver();
 		synchronized (tablingSolver) {
 			// System.out.println("getAllKrakenFishes: " + minSize + "/" + maxSize + "/" +

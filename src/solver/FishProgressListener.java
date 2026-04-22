@@ -17,17 +17,13 @@
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package sudoku;
+package solver;
 
 /**
- * Headless console placeholder for launch4j compatibility paths.
+ * Callback for long-running fish scans.
  */
-public class SudokuConsoleFrame {
-    public void setVisible(boolean visible) {
-        // no-op in CLI mode
-    }
+public interface FishProgressListener {
+	void resetFishProgressBar(int max);
 
-    public void setIn() {
-        // no-op in CLI mode
-    }
+	void updateFishProgressBar(int value);
 }

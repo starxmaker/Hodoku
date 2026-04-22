@@ -25,7 +25,6 @@ import solver.SudokuSolverFactory;
 import sudoku.ClipboardMode;
 import sudoku.DifficultyLevel;
 import sudoku.GameMode;
-import sudoku.GenerateSudokuProgressDialog;
 import sudoku.Options;
 import sudoku.SolutionStep;
 import sudoku.Sudoku2;
@@ -34,8 +33,8 @@ import sudoku.Sudoku2;
  * A BackgroundGenerator generates sudokus with a given {@link DifficultyLevel}
  * and for a given {@link GameMode}. An instance of this class can be contained
  * within a {@link BackgroundGeneratorThread} or within a
- * {@link GenerateSudokuProgressDialog}.<br>
- * If it is called from a {@link GenerateSudokuProgressDialog}, it uses the
+ * progress callback consumer.<br>
+ * If it is called with a callback, it uses the
  * default solver and reports the progress to the dialog. If a puzzle has been
  * found, the dialog is closed. The creation process can be aborted at any
  * time.<br>
@@ -52,11 +51,11 @@ public class BackgroundGenerator {
 	private static final int MAX_TRIES = 20000;
 	/**
 	 * Current number of tries when called from
-	 * {@link GenerateSudokuProgressDialog}.
+	 * callback-driven generation.
 	 */
 	private int anz = 0;
 	/** Progress dialog when called from GUI. */
-	private GenerateSudokuProgressDialog progressDialog = null;
+	private Runnable progressCallback = null;
 
 	/**
 	 * Generates a new instance.
@@ -67,7 +66,7 @@ public class BackgroundGenerator {
 
 	/**
 	 * Creates a sudoku without responses to the GUI. Delegates to
-	 * {@link #generate(sudoku.DifficultyLevel, sudoku.GameMode, sudoku.GenerateSudokuProgressDialog) }.
+	 * {@link #generate(sudoku.DifficultyLevel, sudoku.GameMode, java.lang.Runnable) }.
 	 * 
 	 * @param level
 	 * @param mode
@@ -94,9 +93,9 @@ public class BackgroundGenerator {
 	 * @param dlg
 	 * @return
 	 */
-	public Sudoku2 generate(DifficultyLevel level, GameMode mode, GenerateSudokuProgressDialog dlg) {
+	public Sudoku2 generate(DifficultyLevel level, GameMode mode, Runnable dlg) {
 		long actMillis = System.currentTimeMillis();
-		progressDialog = dlg;
+		progressCallback = dlg;
 		Sudoku2 sudoku = null;
 		SudokuGenerator creator = null;
 		SudokuSolver solver = null;
@@ -139,7 +138,7 @@ public class BackgroundGenerator {
 			if (dlg != null) {
 				if ((System.currentTimeMillis() - actMillis) > 500) {
 					actMillis = System.currentTimeMillis();
-					progressDialog.updateProgressLabel();
+					progressCallback.run();
 					// progressLabel.setText(Integer.toString(getAnz()));
 				}
 			} else {

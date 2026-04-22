@@ -17,17 +17,13 @@
  * along with HoDoKu. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package sudoku;
+package solver;
 
 /**
- * Headless placeholder used by CLI-only builds.
+ * Callback for reporting solver progress in non-UI code paths.
  */
-public class FindAllStepsProgressDialog {
-    public void resetFishProgressBar(int max) {
-        // no-op in CLI mode
-    }
+public interface SolverProgressListener {
+	void initializeProgressState(int totalCandidates);
 
-    public void updateFishProgressBar(int value) {
-        // no-op in CLI mode
-    }
+	void setProgressState(int unsolvedCells, int unsolvedCandidates);
 }

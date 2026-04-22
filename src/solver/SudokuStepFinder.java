@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import sudoku.FindAllStepsProgressDialog;
 import sudoku.SolutionStep;
 import sudoku.SolutionType;
 import sudoku.StepConfig;
@@ -503,7 +502,7 @@ public class SudokuStepFinder {
 	 * @return
 	 */
 	public List<SolutionStep> getAllFishes(Sudoku2 newSudoku, int minSize, int maxSize, int maxFins, int maxEndoFins,
-			FindAllStepsProgressDialog dlg, int forCandidate, int type) {
+			FishProgressListener dlg, int forCandidate, int type) {
 		initialize();
 		Sudoku2 oldSudoku = getSudoku();
 		setSudoku(newSudoku);
@@ -527,7 +526,7 @@ public class SudokuStepFinder {
 	 * @return
 	 */
 	public List<SolutionStep> getAllKrakenFishes(Sudoku2 newSudoku, int minSize, int maxSize, int maxFins,
-			int maxEndoFins, FindAllStepsProgressDialog dlg, int forCandidate, int type) {
+			int maxEndoFins, FishProgressListener dlg, int forCandidate, int type) {
 		initialize();
 		Sudoku2 oldSudoku = getSudoku();
 		setSudoku(newSudoku);

@@ -529,7 +529,6 @@ public class Main {
 		}
 
 		// handle command line arguments
-		SudokuConsoleFrame consoleFrame = null;
 		boolean parseArgs = !launchGui && (launch4jUsed && args.length > 1 || !launch4jUsed && args.length > 0);
 		if (parseArgs) {
 //            for (int i = 0; i < args.length; i++) {
@@ -539,11 +538,7 @@ public class Main {
 			// problem: console is null when using pipeing or input redirection
 //            if (System.console() == null) {
 			if (launch4jUsed) {
-				// JOptionPane.showMessageDialog(null, "Program has no console!", "Console
-				// error", JOptionPane.ERROR_MESSAGE);
-				// System.out.println("no console!");
-				consoleFrame = new SudokuConsoleFrame();
-				consoleFrame.setVisible(true);
+				// launch4j compatibility path retained for CLI argument handling
 			}
 
 //            System.out.println(path);
@@ -632,10 +627,7 @@ public class Main {
 //            for (String opt : options) {
 //                System.out.println("option: " + opt);
 //            }
-			// if a custom console is used, it is safe now to redirect input
-			if (consoleFrame != null) {
-				consoleFrame.setIn();
-			}
+			// no console frame redirection needed in CLI-only build
 
 			// store all args in a map (except puzzle string)
 			String puzzleString = null;
@@ -700,10 +692,7 @@ public class Main {
 
 				printHelpScreen();
 				printIgnoredOptions(helpArg, argMap);
-
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -712,10 +701,7 @@ public class Main {
 
 				RegressionTester tester = new RegressionTester();
 				tester.runTest(argMap.get("/testf"), true);
-
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -724,10 +710,7 @@ public class Main {
 
 				RegressionTester tester = new RegressionTester();
 				tester.runTest(argMap.get("/test"));
-
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -746,9 +729,7 @@ public class Main {
 				}
 
 				System.out.println("Done!");
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -801,17 +782,13 @@ public class Main {
 						if (type.type.getStepConfig().getLevel() > (levelOrd + 1)) {
 							System.out.println("Invalid argument for option /sl: " + type.type.getStepName()
 									+ " requires at least difficulty level " + (levelOrd + 1));
-							if (consoleFrame == null) {
-								System.exit(0);
-							}
+				System.exit(0);
 							return;
 						}
 					}
 				} catch (NumberFormatException ex) {
 					System.out.println("Invalid argument for option /sl: " + argMap.get("/sl") + " - option ignored!");
-					if (consoleFrame == null) {
-						System.exit(0);
-					}
+				System.exit(0);
 					return;
 				}
 				argMap.remove("/sl");
@@ -820,9 +797,7 @@ public class Main {
 			if (argMap.containsKey("/so")) {
 				printIgnoredOptions("/so", argMap);
 				new Main().sortPuzzleFile(argMap.get("/so"), typeList, outFile);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 				return;
 			}
 
@@ -831,17 +806,12 @@ public class Main {
 				printIgnoredOptions("/s", argMap);
 				if (typeList.isEmpty() && actLevel == null) {
 					System.out.println("No step name given and no difficulty level set!");
-					if (consoleFrame == null) {
-						System.exit(0);
-					}
+				System.exit(0);
 					return;
 				}
 
 				new Main().searchForType(typeList, actLevel, outFile);
-
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -940,9 +910,7 @@ public class Main {
 				String fileName = argMap.get("/bs");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
 						outTypes, outFile, false);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -952,9 +920,7 @@ public class Main {
 				String fileName = argMap.get("/bsaf");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
 						outTypes, outFile, true);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -966,18 +932,14 @@ public class Main {
 
 				if (puzzleString == null) {
 					System.out.println("No puzzle given with /bsa - ignored!");
-					if (consoleFrame == null) {
-						System.exit(0);
-					}
+				System.exit(0);
 
 					return;
 				}
 
 				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, true);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -1007,18 +969,14 @@ public class Main {
 				String fileName = argMap.get("/bt");
 				if (testTypes.isEmpty()) {
 					System.out.println("/bt: nothing to do!");
-					if (consoleFrame == null) {
-						System.exit(0);
-					}
+				System.exit(0);
 
 					return;
 				}
 
 				new Main().batchSolve(fileName, null, false, false, true, clipboardMode, outTypes, outFile, false, true,
 						testTypes);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -1027,9 +985,7 @@ public class Main {
 				printIgnoredOptions("", argMap);
 				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, false);
-				if (consoleFrame == null) {
-					System.exit(0);
-				}
+				System.exit(0);
 
 				return;
 			}
@@ -1037,18 +993,14 @@ public class Main {
 			printIgnoredOptions("", argMap);
 			System.out.println("Don't know what to do...");
 			printHelpScreen();
-			if (consoleFrame == null) {
 				System.exit(0);
-			}
 
 			return;
 		}
 
 		// CLI-only build: no GUI mode remains.
 		System.out.println("CLI-only mode: provide puzzle input or a batch command (use /h for help).");
-		if (consoleFrame == null) {
-			System.exit(0);
-		}
+				System.exit(0);
 		return;
 	}
 
@@ -2253,3 +2205,5 @@ class StepStatistic {
 		this.type = type;
 	}
 }
+
+
