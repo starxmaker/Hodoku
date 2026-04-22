@@ -4,3 +4,4 @@ lib/
 legacy/
 jacoco.exec
 reports/
+target

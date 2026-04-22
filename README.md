@@ -26,6 +26,22 @@ and add new features which I felt were lacking. My apologies for the bad German
 translation, I use Google translate since I don't speak German, but I try to retain 
 international support.
 
+Build and test with Maven
+=========================
+
+The project now uses Maven as the primary build system.
+
+Common commands:
+
+  mvn test
+    Compiles sources and runs all JUnit 5 tests.
+
+  mvn package
+    Builds the project JAR in `target/`.
+
+  mvn verify
+    Runs tests and generates JaCoCo coverage report in `target/site/jacoco/`.
+
 Change log
 ==========
 
