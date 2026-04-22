@@ -59,24 +59,12 @@ public final class Options {
 	
 	// Schwierigkeitsstufen
 	public static final DifficultyLevel[] DEFAULT_DIFFICULTY_LEVELS = {
-			new DifficultyLevel(DifficultyType.INCOMPLETE, 0,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"), Color.BLACK,
-					Color.WHITE),
-			new DifficultyLevel(DifficultyType.EASY, 800,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"), Color.WHITE,
-					Color.BLACK),
-			new DifficultyLevel(DifficultyType.MEDIUM, 1000,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium"),
-					new Color(100, 255, 100), Color.BLACK),
-			new DifficultyLevel(DifficultyType.HARD, 1600,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"),
-					new Color(255, 255, 100), Color.BLACK),
-			new DifficultyLevel(DifficultyType.UNFAIR, 1800,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"),
-					new Color(255, 150, 80), Color.BLACK),
-			new DifficultyLevel(DifficultyType.EXTREME, Integer.MAX_VALUE,
-					java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"),
-					new Color(255, 100, 100), Color.BLACK) };
+			new DifficultyLevel(DifficultyType.INCOMPLETE, 0, "Incomplete", Color.BLACK, Color.WHITE),
+			new DifficultyLevel(DifficultyType.EASY, 800, "Easy", Color.WHITE, Color.BLACK),
+			new DifficultyLevel(DifficultyType.MEDIUM, 1000, "Medium", new Color(100, 255, 100), Color.BLACK),
+			new DifficultyLevel(DifficultyType.HARD, 1600, "Hard", new Color(255, 255, 100), Color.BLACK),
+			new DifficultyLevel(DifficultyType.UNFAIR, 1800, "Unfair", new Color(255, 150, 80), Color.BLACK),
+			new DifficultyLevel(DifficultyType.EXTREME, Integer.MAX_VALUE, "Extreme", new Color(255, 100, 100), Color.BLACK) };
 
 	private DifficultyLevel[] difficultyLevels = null;
 	// Reihenfolge und Konfiguration der SolutionSteps
@@ -905,33 +893,18 @@ public final class Options {
 	 * after the correct locale has been set.
 	 */
 	public void resetDifficultyLevelStrings() {
-//        new DifficultyLevel(DifficultyType.INCOMPLETE, 0, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"), Color.BLACK, Color.WHITE),
-//        new DifficultyLevel(DifficultyType.EASY, 600, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"), Color.WHITE, Color.BLACK),
-//        new DifficultyLevel(DifficultyType.MEDIUM, 1500, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium"), new Color(100, 255, 100), Color.BLACK),
-//        new DifficultyLevel(DifficultyType.HARD, 3500, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"), new Color(255, 255, 100), Color.BLACK),
-//        new DifficultyLevel(DifficultyType.UNFAIR, 5000, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"), new Color(255, 150, 80), Color.BLACK),
-//        new DifficultyLevel(DifficultyType.EXTREME, Integer.MAX_VALUE, java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"), new Color(255, 100, 100), Color.BLACK)
-		DEFAULT_DIFFICULTY_LEVELS[0]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"));
-		DEFAULT_DIFFICULTY_LEVELS[1]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"));
-		DEFAULT_DIFFICULTY_LEVELS[2]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium"));
-		DEFAULT_DIFFICULTY_LEVELS[3]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"));
-		DEFAULT_DIFFICULTY_LEVELS[4]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"));
-		DEFAULT_DIFFICULTY_LEVELS[5]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"));
-		difficultyLevels[0]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.incomplete"));
-		difficultyLevels[1].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.easy"));
-		difficultyLevels[2].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.medium"));
-		difficultyLevels[3].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.hard"));
-		difficultyLevels[4].setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.unfair"));
-		difficultyLevels[5]
-				.setName(java.util.ResourceBundle.getBundle("intl/MainFrame").getString("MainFrame.extreme"));
-
+		DEFAULT_DIFFICULTY_LEVELS[0].setName("Incomplete");
+		DEFAULT_DIFFICULTY_LEVELS[1].setName("Easy");
+		DEFAULT_DIFFICULTY_LEVELS[2].setName("Medium");
+		DEFAULT_DIFFICULTY_LEVELS[3].setName("Hard");
+		DEFAULT_DIFFICULTY_LEVELS[4].setName("Unfair");
+		DEFAULT_DIFFICULTY_LEVELS[5].setName("Extreme");
+		difficultyLevels[0].setName("Incomplete");
+		difficultyLevels[1].setName("Easy");
+		difficultyLevels[2].setName("Medium");
+		difficultyLevels[3].setName("Hard");
+		difficultyLevels[4].setName("Unfair");
+		difficultyLevels[5].setName("Extreme");
 	}
 
 	/**

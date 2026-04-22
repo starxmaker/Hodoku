@@ -271,7 +271,7 @@ public class SudokuUtil {
 
 		// ok, the correct class name is now in className
 		// -> obtain an instance of the LaF class
-		ClassLoader classLoader = MainFrame.class.getClassLoader();
+		ClassLoader classLoader = Main.class.getClassLoader();
 		Class<?> lafClass = null;
 		try {
 			lafClass = classLoader.loadClass(className);

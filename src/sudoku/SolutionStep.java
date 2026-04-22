@@ -39,11 +39,7 @@ import solver.RestrictedCommon;
  */
 public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
-	private static final String[] entityNames = {
-			java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.block"),
-			java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.line"),
-			java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.col"),
-			java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.cell") };
+	private static final String[] entityNames = { "block", "line", "column", "cell" };
 	private static final String[] entityShortNames = { "b", "r", "c", "" };
 	private static final DecimalFormat FISH_FORMAT = new DecimalFormat("#00");
 	private SolutionType type;
@@ -422,8 +418,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			} else {
 				String tmpStepName = getStepName();
 				if (isSiamese) {
-					tmpStepName = java.util.ResourceBundle.getBundle("intl/SolutionStep")
-							.getString("SolutionStep.siamese") + " " + getStepName();
+					tmpStepName = "Siamese" + " " + getStepName();
 				}
 				// return candBuff.toString() + " (" + candidatesToDelete.size() + "):" +
 				// delPos.toString() + " (" + tmpStepName + ")";
@@ -543,27 +538,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			}
 		}
 		if (!found) {
-			throw new RuntimeException(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_setType")
-							+ " (" + type + ")");
+			throw new RuntimeException("Invalid type in setType()" + " (" + type + ")");
 		}
 		this.type = type;
 	}
 
 	public void addValue(int value) {
 		if (value < 1 || value > 9) {
-			throw new RuntimeException(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_setValue")
-							+ " (" + value + ")");
+			throw new RuntimeException("Invalid value in setValue()" + " (" + value + ")");
 		}
 		values.add(value);
 	}
 
 	public void addIndex(int index) {
 		if (index < 0 || index > 80) {
-			throw new RuntimeException(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_setIndex")
-							+ " (" + index + ")");
+			throw new RuntimeException("Invalid index in setIndex()" + " (" + index + ")");
 		}
 		indices.add(index);
 	}
@@ -766,7 +755,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			}
 			if (art >= 2) {
 				tmp.append(" ");
-				tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+				tmp.append(" in");
 				tmp.append(" ");
 				tmp.append(getCompactCellPrint(indices));
 				getCandidatesToDelete(tmp);
@@ -781,8 +770,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 				str += ": " + values.get(0);
 			}
 			if (art >= 2) {
-				str += " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " "
-						+ getEntityShortName() + getEntityNumber();
+				str += " " + " in" + " " + getEntityShortName() + getEntityNumber();
 				tmp = new StringBuffer(str);
 				getCandidatesToDelete(tmp);
 				str = tmp.toString();
@@ -796,15 +784,11 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 				str += ": " + values.get(0);
 			}
 			if (art >= 2) {
-				str += " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " "
-						+ getCompactCellPrint(indices, 0, 1);
+				str += " " + " in" + " " + getCompactCellPrint(indices, 0, 1);
 				if (type == SolutionType.DUAL_TWO_STRING_KITE) {
-					str += "/" + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in")
-							+ " " + getCompactCellPrint(indices, 4, 5);
+					str += "/" + " in" + " " + getCompactCellPrint(indices, 4, 5);
 				}
-				str += " ("
-						+ java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.connected_by")
-						+ " " + getCompactCellPrint(indices, 2, 3) + ")";
+				str += " (" + "connected by" + " " + getCompactCellPrint(indices, 2, 3) + ")";
 				tmp = new StringBuffer(str);
 				getCandidatesToDelete(tmp);
 				str = tmp.toString();
@@ -817,8 +801,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 				str += ": " + values.get(0);
 			}
 			if (art >= 2) {
-				str += " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " "
-						+ getEntityShortName() + getEntityNumber() + " (" + getCompactCellPrint(indices, 0, 1);
+				str += " " + " in" + " " + getEntityShortName() + getEntityNumber() + " (" + getCompactCellPrint(indices, 0, 1);
 				if (type == SolutionType.DUAL_EMPTY_RECTANGLE) {
 					str += "/" + getCompactCellPrint(indices, 2, 3);
 				}
@@ -836,16 +819,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			if (art >= 2) {
 				tmp = new StringBuffer(str);
 				tmp.append(" ");
-				tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+				tmp.append(" in");
 				tmp.append(" ");
 				tmp.append(getCompactCellPrint(indices, 0, 1));
 				tmp.append(" ");
-				tmp.append(
-						java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.connected_by"));
+				tmp.append("connected by");
 				tmp.append(" ");
 				tmp.append(values.get(1));
 				tmp.append(" ");
-				tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in"));
+				tmp.append(" in");
 				tmp.append(" ");
 				getFinSet(tmp, fins, false);
 				getCandidatesToDelete(tmp);
@@ -859,9 +841,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 				str += ": " + values.get(0) + "/" + values.get(1);
 			}
 			if (art >= 2) {
-				str += "/" + values.get(2) + " "
-						+ java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in") + " "
-						+ getCompactCellPrint(indices);
+				str += "/" + values.get(2) + " " + " in" + " " + getCompactCellPrint(indices);
 				tmp = new StringBuffer(str);
 				getCandidatesToDelete(tmp);
 				str = tmp.toString();
@@ -960,8 +940,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			if (art >= 2) {
 				if (type == SolutionType.FORCING_CHAIN_CONTRADICTION
 						|| type == SolutionType.FORCING_NET_CONTRADICTION) {
-					str += " " + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.in")
-							+ " " + getEntityShortNameNumber();
+					str += " " + " in" + " " + getEntityShortNameNumber();
 				} else {
 					// str += " Verity";
 				}
@@ -1052,8 +1031,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 		case KRAKEN_FISH_TYPE_2:
 			tmp = new StringBuffer();
 			if (isSiamese) {
-				tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.siamese"))
-						.append(" ");
+				tmp.append("Siamese").append(" ");
 			}
 			tmp.append(getStepName());
 			if (art >= 1) {
@@ -1176,12 +1154,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 				// old code -> has to remain for correctly displaying saved files
 				if (art == 1) {
 					tmp = new StringBuffer(str + ": ");
-					tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start"))
-							.append("=");
+					tmp.append("Start").append("=");
 					getAls(tmp, 0);
-					tmp.append(", ").append(
-							java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end"))
-							.append("=");
+					tmp.append(", ").append("End").append("=");
 					getAls(tmp, alses.size() - 1);
 					str = tmp.toString();
 				}
@@ -1209,12 +1184,9 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			} else {
 				if (art == 1) {
 					tmp = new StringBuffer(str + ": ");
-					tmp.append(java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.start"))
-							.append("=");
+					tmp.append("Start").append("=");
 					getAls(tmp, 0);
-					tmp.append(", ").append(
-							java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.end"))
-							.append("=");
+					tmp.append(", ").append("End").append("=");
 					getAls(tmp, alses.size() - 1);
 					str = tmp.toString();
 				}
@@ -1286,22 +1258,18 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 			}
 			break;
 		case INCOMPLETE:
-			str = java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.incomplete_solution");
+			str = "Incomplete solution!";
 			break;
 		case GIVE_UP:
 			tmp = new StringBuffer();
 			tmp.append(getStepName());
 			if (art >= 1) {
-				tmp.append(": ").append(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.dont_know")
-				);
+				tmp.append(": ").append("Don't know how to proceed!");
 			}
 			str = tmp.toString();
 			break;
 		default:
-			throw new RuntimeException(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_type")
-							+ " (" + type + ")!");
+			throw new RuntimeException("Don't know how to handle this type" + " (" + type + ")!");
 		}
 		return str;
 	}
@@ -1647,21 +1615,15 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 		if (!library) {
 			if (list.size() == 1) {
 				if (endo) {
-					tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep")
-							.getString("SolutionStep.endofin_in")).append(" ");
+					tmp.append(" ").append("Endo Fin in").append(" ");
 				} else {
-					tmp.append(" ").append(
-							java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fin_in"))
-							.append(" ");
+					tmp.append(" ").append("Fin in").append(" ");
 				}
 			} else {
 				if (endo) {
-					tmp.append(" ").append(java.util.ResourceBundle.getBundle("intl/SolutionStep")
-							.getString("SolutionStep.endofins_in")).append(" ");
+					tmp.append(" ").append("Endo Fins in").append(" ");
 				} else {
-					tmp.append(" ").append(
-							java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.fins_in"))
-							.append(" ");
+					tmp.append(" ").append("Fins in").append(" ");
 				}
 			}
 		}
@@ -1691,9 +1653,7 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
 	public void setEntity(int entity) {
 		if (entity != Sudoku2.BLOCK && entity != Sudoku2.ROW && entity != Sudoku2.COL && entity != Sudoku2.CELL) {
-			throw new RuntimeException(
-					java.util.ResourceBundle.getBundle("intl/SolutionStep").getString("SolutionStep.invalid_setEntity")
-							+ " (" + entity + java.util.ResourceBundle.getBundle("intl/SolutionStep").getString(")"));
+			throw new RuntimeException("Invalid value for entity in setEntity()" + " (" + entity + ")");
 		}
 		this.entity = entity;
 	}

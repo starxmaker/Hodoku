@@ -548,9 +548,9 @@ public class Main {
 
 //            System.out.println(path);
 			// copyright notice
-			System.out.println(MainFrame.VERSION + " - " + MainFrame.BUILD);
+			System.out.println("HoDoKu CLI");
 			System.out.println(
-					  "Copyright (C) 2019-20 PseudoFish\r\n" + 
+					  "Copyright (C) 2019-20 PseudoFish\r\n" +
 					  "Copyright (C) 2008-12 Bernhard Hobiger\r\n" + "\r\n" +
 					  "HoDoKu is free software: you can redistribute it and/or modify\r\n" +
 					  "it under the terms of the GNU General Public License as published by\r\n" +
@@ -1044,24 +1044,12 @@ public class Main {
 			return;
 		}
 
-		// ok - no console operation, start GUI
-		startGUI(needToResetPuzzles, launchFile);
-	}
-	
-	private static void startGUI(boolean needToResetPuzzles, String launchFile) {
-		
-		if (needToResetPuzzles) {
-			BackgroundGeneratorThread.getInstance().resetAll();
+		// CLI-only build: no GUI mode remains.
+		System.out.println("CLI-only mode: provide puzzle input or a batch command (use /h for help).");
+		if (consoleFrame == null) {
+			System.exit(0);
 		}
-
-		final String lf = launchFile;
-		java.awt.EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				MainFrame mainFrame = new MainFrame(lf);
-				mainFrame.setVisible(true);
-			}
-		});
+		return;
 	}
 
 	/**
