@@ -1335,9 +1335,21 @@ public class SolutionStep implements Comparable<SolutionStep>, Cloneable {
 
 	private void getColorCellPrint(StringBuffer tmp) {
 		tmp.append(" ");
-		StringBuffer[] bufs = new StringBuffer[Options.getInstance().getColoringColors().length];
+		int maxColorIndex = -1;
+		for (int color : getColorCandidates().values()) {
+			if (color > maxColorIndex) {
+				maxColorIndex = color;
+			}
+		}
+		if (maxColorIndex < 0) {
+			return;
+		}
+		StringBuffer[] bufs = new StringBuffer[maxColorIndex + 1];
 		for (int index : getColorCandidates().keySet()) {
 			int color = getColorCandidates().get(index);
+			if (color < 0 || color >= bufs.length) {
+				continue;
+			}
 			if (bufs[color] == null) {
 				bufs[color] = new StringBuffer();
 				bufs[color].append("(");

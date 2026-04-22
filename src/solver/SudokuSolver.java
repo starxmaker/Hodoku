@@ -30,7 +30,6 @@ import sudoku.DifficultyLevel;
 import sudoku.DifficultyType;
 import sudoku.FindAllStepsProgressDialog;
 import sudoku.GameMode;
-import sudoku.GuiState;
 import sudoku.Options;
 import sudoku.SolutionCategory;
 import sudoku.SolutionStep;
@@ -613,50 +612,6 @@ public class SudokuSolver {
 
 	public void setAnzSteps(int[] anzSteps) {
 		this.anzSteps = anzSteps;
-	}
-
-	/**
-	 * Loads all relevant objects into <code>state</code>. If <code>copy</code> is
-	 * true, all objects are copied.<br>
-	 * Some objects have to be copied regardless of parameter <code>copy</code>.
-	 * 
-	 * @param state
-	 * @param copy
-	 */
-	@SuppressWarnings("unchecked")
-	public void getState(GuiState state, boolean copy) {
-		if (copy) {
-			state.setAnzSteps(anzSteps.clone());
-			state.setSteps((List<SolutionStep>) ((ArrayList<SolutionStep>) steps).clone());
-		} else {
-			state.setAnzSteps(anzSteps);
-			state.setSteps(steps);
-		}
-	}
-
-	/**
-	 * Loads back a saved state. Whether the objects had been copied before is
-	 * irrelevant here.<br>
-	 * <br>
-	 * 
-	 * Dont forget to set the score or loading saved sudokus will not display
-	 * correctly in the summary panel (relies on it!).
-	 * 
-	 * @param state
-	 */
-	public void setState(GuiState state) {
-		// corrections for newer versions: anzSteps might be too small if steps types
-		// have been added
-		// contents of state could come from a file created with an older version of
-		// HoDoKu
-		if (state.getAnzSteps().length < anzSteps.length) {
-			int[] tmpArray = new int[anzSteps.length];
-			System.arraycopy(state.getAnzSteps(), 0, tmpArray, 0, state.getAnzSteps().length);
-			state.setAnzSteps(tmpArray);
-		}
-		anzSteps = state.getAnzSteps();
-		steps = state.getSteps();
-		score = state.getSudoku().getScore();
 	}
 
 	private void resetProgressStepCounters() {

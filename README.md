@@ -539,26 +539,18 @@ Running Tests
 =============
 
 Tests cover the solver and generator and are located under `src/test/java/`.
-They use [JUnit 5](https://junit.org/junit5/) which is **not bundled** in the
-repository. [Apache Ant](https://ant.apache.org/) and a JDK 8+ must be installed.
+They use [JUnit 5](https://junit.org/junit5/) and are handled by Maven.
+Maven resolves all test dependencies automatically, so no manual JUnit download
+or Ant setup is required.
 
-> **Note for Eclipse users:** open the project in Eclipse only after running
-> `ant download-junit` (or `ant test`) at least once, so that the JAR exists
-> on disk and Eclipse can resolve the build path entry.
+Run all tests:
 
-On first run Ant automatically downloads
-`junit-platform-console-standalone-1.10.2.jar` into `lib/` (requires internet
-access). Subsequent runs reuse the cached JAR.
+  mvn test
 
-    ant clean test
+Run a clean build plus tests:
 
-To skip the clean step:
+  mvn clean test
 
-    ant test
+Generate coverage during verification:
 
-If you prefer to download the JAR manually, place it at:
-
-    lib/junit-platform-console-standalone-1.10.2.jar
-
-Direct download link:
-https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.2/junit-platform-console-standalone-1.10.2.jar
+  mvn verify

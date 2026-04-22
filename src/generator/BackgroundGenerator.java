@@ -19,7 +19,6 @@
 
 package generator;
 
-import java.awt.EventQueue;
 import java.util.List;
 import solver.SudokuSolver;
 import solver.SudokuSolverFactory;
@@ -140,14 +139,8 @@ public class BackgroundGenerator {
 			if (dlg != null) {
 				if ((System.currentTimeMillis() - actMillis) > 500) {
 					actMillis = System.currentTimeMillis();
-					EventQueue.invokeLater(new Runnable() {
-
-						@Override
-						public void run() {
-							progressDialog.updateProgressLabel();
-							// progressLabel.setText(Integer.toString(getAnz()));
-						}
-					});
+					progressDialog.updateProgressLabel();
+					// progressLabel.setText(Integer.toString(getAnz()));
 				}
 			} else {
 				if (getAnz() > MAX_TRIES) {
