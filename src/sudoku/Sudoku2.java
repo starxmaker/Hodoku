@@ -21,7 +21,7 @@ package sudoku;
 
 import generator.SudokuGenerator;
 import generator.SudokuGeneratorFactory;
-import java.io.ObjectInputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -2359,22 +2359,15 @@ public class Sudoku2 implements Cloneable {
 //    }
 
 	/**
-	 * Create all 46656 possible templates. Since the calculation has become
-	 * incredibly slow on Windows 7 64bit, the templates are read from a file.
+	 * Create all 46656 possible templates by recursive generation.
+	 * Each template is a set of 9 cell indices (one per row) forming a valid
+	 * placement of a single digit with no column or box conflicts.
 	 */
 	private static void initTemplates() {
-		// alle 46656 möglichen Templates anlegen
-		try {
-			// System.out.println("Start Templates lesen...");
-			long ticks = System.currentTimeMillis();
-			ObjectInputStream in = new ObjectInputStream(Sudoku2.class.getResourceAsStream("/templates.dat"));
-			templates = (SudokuSetBase[]) in.readObject();
-			in.close();
-			ticks = System.currentTimeMillis() - ticks;
-			// System.out.println("Templates lesen: " + ticks + "ms");
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
+		// Generate all 46656 templates recursively
+		ArrayList<SudokuSetBase> result = new ArrayList<SudokuSetBase>(46656);
+		generateTemplates(0, new boolean[9], new boolean[9], new int[9], result);
+		templates = result.toArray(new SudokuSetBase[0]);
 //        //Sudoku2 sudoku = new Sudoku2(false);
 //        Sudoku2 sudoku = new Sudoku2();
 //        SudokuSetBase set = new SudokuSetBase();
@@ -2396,13 +2389,47 @@ public class Sudoku2 implements Cloneable {
 //            ex.printStackTrace();
 //        }
 
-		// jetzt noch die Templates für die Häuser
+		// now build the house templates
 		for (int i = 0; i < ROWS.length; i++) {
 			for (int j = 0; j < ROWS[i].length; j++) {
 				ROW_TEMPLATES[i].add(ROWS[i][j]);
 				COL_TEMPLATES[i].add(COLS[i][j]);
 				BLOCK_TEMPLATES[i].add(BLOCKS[i][j]);
 			}
+		}
+	}
+
+	/**
+	 * Recursively generates all valid templates (valid placements of one digit
+	 * across all 9 rows with no column or 3x3-box conflicts).
+	 *
+	 * @param row         current row being assigned (0–8)
+	 * @param colUsed     flags for columns already claimed
+	 * @param boxColUsed  flags for (boxRow*3 + boxCol) already claimed
+	 * @param cells       cell indices chosen so far
+	 * @param result      accumulator for completed templates
+	 */
+	private static void generateTemplates(int row, boolean[] colUsed, boolean[] boxColUsed,
+			int[] cells, ArrayList<SudokuSetBase> result) {
+		if (row == 9) {
+			SudokuSetBase set = new SudokuSetBase();
+			for (int i = 0; i < 9; i++) {
+				set.add(cells[i]);
+			}
+			result.add(set);
+			return;
+		}
+		int boxRow = row / 3;
+		for (int col = 0; col < 9; col++) {
+			if (colUsed[col]) continue;
+			int boxColIdx = boxRow * 3 + col / 3;
+			if (boxColUsed[boxColIdx]) continue;
+			colUsed[col] = true;
+			boxColUsed[boxColIdx] = true;
+			cells[row] = row * 9 + col;
+			generateTemplates(row + 1, colUsed, boxColUsed, cells, result);
+			colUsed[col] = false;
+			boxColUsed[boxColIdx] = false;
 		}
 	}
 

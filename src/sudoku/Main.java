@@ -64,6 +64,11 @@ public class Main {
 	/** Creates a new instance of Main */
 	public Main() {}
 
+	private static void loadConfigFile(String fileName) {
+		System.out.println("Using configuration file '" + fileName + "'");
+		Options.readOptions(fileName);
+	}
+
 	public String getSrcDir() {
 
 		String path = getClass().getClassLoader().getResource("sudoku").toExternalForm().toLowerCase();
@@ -173,18 +178,12 @@ public class Main {
 		);
 
 		thread.start();
-		ShutDownThread st = new ShutDownThread(thread);
-		Runtime.getRuntime().addShutdownHook(st);
 
 		try {
 			thread.join();
 		} catch (InterruptedException ex) {
 			Logger.getLogger(getClass().getName()).log(Level.SEVERE, "join interrupted...", ex);
 		}
-
-		try {
-			Runtime.getRuntime().removeShutdownHook(st);
-		} catch (Exception ex) {}
 
 		int min = (int) (thread.getTicks() / 60000);
 		int sec = (int) (thread.getTicks() % 60000);
@@ -531,15 +530,72 @@ public class Main {
 		// handle command line arguments
 		boolean parseArgs = !launchGui && (launch4jUsed && args.length > 1 || !launch4jUsed && args.length > 0);
 		if (parseArgs) {
+			handleCliArgs(args);
+			return;
+		}
+
+		// CLI-only build: no GUI mode remains.
+		System.out.println("CLI-only mode: provide puzzle input or a batch command (use /h for help).");
+		return;
+	}
+
+	/**
+	 * Handle command-line arguments. Called from both {@link #main(String[])} and
+	 * {@link WasmMain#main(String[])} to avoid code duplication.
+	 */
+	static void handleCliArgs(String[] args) {
+		handleCliArgsCore(preprocessDesktopArgs(args));
+	}
+
+	static void handleCliArgsWasm(String[] args) {
+		handleCliArgsCore(preprocessWasmArgs(args));
+	}
+
+	private static String[] preprocessDesktopArgs(String[] args) {
+		List<String> filteredArgs = new ArrayList<String>();
+		for (int i = 0; i < args.length; i++) {
+			String arg = args[i];
+			if (arg.equalsIgnoreCase("/c")) {
+				if (i + 1 >= args.length) {
+					System.out.println("No value for parameter: '/c' ignored!");
+				} else {
+					String fileName = args[++i];
+					if (fileName.toLowerCase().equals("default")) {
+						System.out.println("Using default config!");
+						Options.resetAll();
+						Options.getInstance();
+					} else {
+						loadConfigFile(fileName);
+					}
+				}
+			} else {
+				filteredArgs.add(arg);
+			}
+		}
+		return filteredArgs.toArray(new String[0]);
+	}
+
+	private static String[] preprocessWasmArgs(String[] args) {
+		List<String> filteredArgs = new ArrayList<String>();
+		for (int i = 0; i < args.length; i++) {
+			String arg = args[i];
+			if (arg.equalsIgnoreCase("/c")) {
+				if (i + 1 >= args.length) {
+					System.out.println("No value for parameter: '/c' ignored!");
+				} else {
+					System.out.println("Ignoring configuration file '" + args[++i] + "' in WASM mode");
+				}
+			} else {
+				filteredArgs.add(arg);
+			}
+		}
+		return filteredArgs.toArray(new String[0]);
+	}
+
+	private static void handleCliArgsCore(String[] args) {
 //            for (int i = 0; i < args.length; i++) {
 //                System.out.println("args[" + i + "]: <" + args[i] + ">");
 //            }
-			// open a fake console when HoDoKu is started as exe file
-			// problem: console is null when using pipeing or input redirection
-//            if (System.console() == null) {
-			if (launch4jUsed) {
-				// launch4j compatibility path retained for CLI argument handling
-			}
 
 //            System.out.println(path);
 			// copyright notice
@@ -636,7 +692,7 @@ public class Main {
 			for (int i = 0; i < options.size(); i++) {
 				String arg = options.get(i).trim().toLowerCase();
 				if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
-						|| arg.equals("/so") || arg.equals("/c") || arg.equals("/o") || arg.equals("/bsaf")
+						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
 						|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
 						|| arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
 								&& options.get(i + 1).trim().charAt(0) != '/')) {
@@ -692,7 +748,6 @@ public class Main {
 
 				printHelpScreen();
 				printIgnoredOptions(helpArg, argMap);
-				System.exit(0);
 
 				return;
 			}
@@ -701,7 +756,6 @@ public class Main {
 
 				RegressionTester tester = new RegressionTester();
 				tester.runTest(argMap.get("/testf"), true);
-				System.exit(0);
 
 				return;
 			}
@@ -710,7 +764,6 @@ public class Main {
 
 				RegressionTester tester = new RegressionTester();
 				tester.runTest(argMap.get("/test"));
-				System.exit(0);
 
 				return;
 			}
@@ -729,25 +782,8 @@ public class Main {
 				}
 
 				System.out.println("Done!");
-				System.exit(0);
 
 				return;
-			}
-
-			if (argMap.containsKey("/c")) {
-
-				String fileName = argMap.get("/c");
-
-				if (fileName.toLowerCase().equals("default")) {
-					System.out.println("Using default config!");
-					Options.resetAll();
-					Options.getInstance();
-				} else {
-					System.out.println("Using configuration file '" + fileName + "'");
-					Options.readOptions(fileName);
-				}
-
-				argMap.remove("/c");
 			}
 
 			String outFile = null;
@@ -775,20 +811,18 @@ public class Main {
 				int levelOrd = -1;
 				try {
 					levelOrd = Integer.parseInt(argMap.get("/sl"));
-					actLevel = Options.getInstance().getDifficultyLevel(levelOrd + 1);
+					actLevel = Options.getInstanceNoRead().getDifficultyLevel(levelOrd + 1);
 					// if a level is given together with a step list, the level must be
 					// greater or equal the most difficult step in the list
 					for (StepType type : typeList) {
 						if (type.type.getStepConfig().getLevel() > (levelOrd + 1)) {
 							System.out.println("Invalid argument for option /sl: " + type.type.getStepName()
 									+ " requires at least difficulty level " + (levelOrd + 1));
-				System.exit(0);
 							return;
 						}
 					}
 				} catch (NumberFormatException ex) {
 					System.out.println("Invalid argument for option /sl: " + argMap.get("/sl") + " - option ignored!");
-				System.exit(0);
 					return;
 				}
 				argMap.remove("/sl");
@@ -797,7 +831,6 @@ public class Main {
 			if (argMap.containsKey("/so")) {
 				printIgnoredOptions("/so", argMap);
 				new Main().sortPuzzleFile(argMap.get("/so"), typeList, outFile);
-				System.exit(0);
 				return;
 			}
 
@@ -806,12 +839,10 @@ public class Main {
 				printIgnoredOptions("/s", argMap);
 				if (typeList.isEmpty() && actLevel == null) {
 					System.out.println("No step name given and no difficulty level set!");
-				System.exit(0);
 					return;
 				}
 
 				new Main().searchForType(typeList, actLevel, outFile);
-				System.exit(0);
 
 				return;
 			}
@@ -844,7 +875,7 @@ public class Main {
 					System.out.println("Invalid argument for /vf ('" + arg + "'): '0' used instead!");
 				}
 
-				Options.getInstance().setFishDisplayMode(fishFormat);
+				Options.getInstanceNoRead().setFishDisplayMode(fishFormat);
 				argMap.remove("/vf");
 			}
 
@@ -877,7 +908,7 @@ public class Main {
 
 				String[] typesArr = types.split(",");
 				for (int i = 0; i < typesArr.length; i++) {
-					StepConfig[] steps = Options.getInstance().solverSteps;
+					StepConfig[] steps = Options.getInstanceNoRead().solverSteps;
 					boolean typeFound = false;
 					for (int j = 0; j < steps.length; j++) {
 						if (steps[j].getType().getArgName().equals(typesArr[i])) {
@@ -910,7 +941,6 @@ public class Main {
 				String fileName = argMap.get("/bs");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
 						outTypes, outFile, false);
-				System.exit(0);
 
 				return;
 			}
@@ -920,7 +950,6 @@ public class Main {
 				String fileName = argMap.get("/bsaf");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
 						outTypes, outFile, true);
-				System.exit(0);
 
 				return;
 			}
@@ -932,14 +961,12 @@ public class Main {
 
 				if (puzzleString == null) {
 					System.out.println("No puzzle given with /bsa - ignored!");
-				System.exit(0);
 
 					return;
 				}
 
 				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, true);
-				System.exit(0);
 
 				return;
 			}
@@ -969,14 +996,12 @@ public class Main {
 				String fileName = argMap.get("/bt");
 				if (testTypes.isEmpty()) {
 					System.out.println("/bt: nothing to do!");
-				System.exit(0);
 
 					return;
 				}
 
 				new Main().batchSolve(fileName, null, false, false, true, clipboardMode, outTypes, outFile, false, true,
 						testTypes);
-				System.exit(0);
 
 				return;
 			}
@@ -985,7 +1010,6 @@ public class Main {
 				printIgnoredOptions("", argMap);
 				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, false);
-				System.exit(0);
 
 				return;
 			}
@@ -993,16 +1017,10 @@ public class Main {
 			printIgnoredOptions("", argMap);
 			System.out.println("Don't know what to do...");
 			printHelpScreen();
-				System.exit(0);
 
 			return;
 		}
-
-		// CLI-only build: no GUI mode remains.
-		System.out.println("CLI-only mode: provide puzzle input or a batch command (use /h for help).");
-				System.exit(0);
-		return;
-	}
+	// end of handleCliArgs
 
 	/**
 	 * Dynamically loads the Nimbus LaF and resets the default font to a larger

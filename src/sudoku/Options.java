@@ -460,8 +460,8 @@ public final class Options {
 	private double candidateFontFactor = CANDIDATE_FONT_FACTOR;
 	private double hintBackFactor = HINT_BACK_FACTOR;
 	private double boxLineFactor = BOX_LINE_FACTOR;
-	public static final String DEFAULT_FILE_DIR = System.getProperty("user.home");
-	public static final String DEFAULT_IMAGE_DIR = System.getProperty("user.home");
+	public static final String DEFAULT_FILE_DIR = "";
+	public static final String DEFAULT_IMAGE_DIR = "";
 	private String defaultFileDir = DEFAULT_FILE_DIR;
 	private String defaultImageDir = DEFAULT_IMAGE_DIR;
 	public static final String DEFAULT_LANGUAGE = "";
@@ -544,11 +544,20 @@ public final class Options {
 		instance = new Options();
 	}
 
+	public static void initDefaults() {
+		instance = new Options();
+		instance.resetDifficultyLevelStrings();
+	}
+
 	public static Options getInstance() {
 		if (instance == null) {
-			readOptions();
+			instance = new Options();
 		}
 		return instance;
+	}
+
+	public static Options getInstanceNoRead() {
+		return getInstance();
 	}
 
 	public DifficultyLevel[] copyDifficultyLevels(DifficultyLevel[] src) {
