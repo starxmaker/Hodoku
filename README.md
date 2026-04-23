@@ -1,3 +1,9 @@
+# Hodoku Core
+
+Fork of Hodoku that removes UI functionality and transpiles the code into JavaScript.
+
+## Original Documentation
+
 Hodoku is a solver/generator/trainer/analyzer for standard sudoku. It is written in
 Java/Swing and should therefore run on any platform supported by Java (tested
 on Windows and Linux - Ubuntu/GTK+-LAF). Since it is written in Java the
@@ -37,10 +43,20 @@ Common commands:
     Compiles sources and runs all JUnit 5 tests.
 
   mvn package
-    Builds the project JAR in `target/`.
+    Builds the project JAR in `target/` and generates TeaVM JavaScript output in
+    `target/teavm-js/`.
 
   mvn verify
     Runs tests and generates JaCoCo coverage report in `target/site/jacoco/`.
+
+TeaVM JavaScript output:
+
+  - `target/teavm-js/Hodoku-teavm.js` (TeaVM-generated JavaScript bundle)
+
+Notes:
+
+  - The default TeaVM JavaScript build requires JDK 11+.
+  - The regular JVM test workflow remains unchanged.
 
 Change log
 ==========

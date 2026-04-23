@@ -20,27 +20,21 @@
 package sudoku;
 
 /**
- * WebAssembly entry point for HoDoKu.
+ * TeaVM entry point for HoDoKu.
  *
  * <p>This class is a stripped-down alternative to {@link Main} that avoids JDK
- * APIs unsupported by TeaVM (file-based logging, {@code System.getProperty},
- * AWT/XMLEncoder, Java serialization via {@code ObjectInputStream}).  All
- * solver and generator logic is unchanged; only the startup scaffolding
- * differs.</p>
+ * APIs unsupported by TeaVM such as desktop logging/config bootstrapping and
+ * XML-backed option loading.</p>
  */
-public class WasmMain {
+public class TeaVMMain {
 
     /**
-     * WASM entry point.
-     *
-     * <p>Performs the minimal initialisation required before delegating to
-     * {@link Main#handleCliArgs(String[])} for argument parsing and dispatch.</p>
+     * TeaVM entry point.
      *
      * @param args command-line arguments forwarded from the JavaScript host
      */
     public static void main(String[] args) {
 
-        // Initialise options with built-in defaults – no file I/O, no AWT.
         Options.initDefaults();
 
         if (args == null || args.length == 0) {
@@ -48,6 +42,6 @@ public class WasmMain {
             return;
         }
 
-        Main.handleCliArgsWasm(args);
+        Main.handleCliArgsTeaVM(args);
     }
 }

@@ -18,6 +18,9 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <jacoco.version>0.8.12</jacoco.version>
+        <teavm.version>0.13.1</teavm.version>
+        <teavm.js.output.dir>${project.build.directory}/teavm-js</teavm.js.output.dir>
+        <teavm.js.module.name>Hodoku-teavm.js</teavm.js.module.name>
     </properties>
 
     <dependencies>
@@ -26,6 +29,12 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-classlib</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -104,176 +113,54 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>require-jdk11-for-teavm-js</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[11,)</version>
+                                    <message>The default TeaVM JavaScript build requires JDK 11+.</message>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.teavm</groupId>
+                <artifactId>teavm-maven-plugin</artifactId>
+                <version>${teavm.version}</version>
+                <executions>
+                    <execution>
+                        <id>teavm-js</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>sudoku.TeaVMMain</mainClass>
+                            <targetType>JAVASCRIPT</targetType>
+                            <targetDirectory>${teavm.js.output.dir}</targetDirectory>
+                            <targetFileName>${teavm.js.module.name}</targetFileName>
+                            <optimizationLevel>SIMPLE</optimizationLevel>
+                            <debugInformationGenerated>false</debugInformationGenerated>
+                            <sourceMapsGenerated>false</sourceMapsGenerated>
+                            <minifying>false</minifying>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>wasm</id>
-            <properties>
-                <teavm.version>0.13.1</teavm.version>
-                <wasm.output.dir>${project.build.directory}/wasm</wasm.output.dir>
-                <wasm.module.name>Hodoku</wasm.module.name>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.teavm</groupId>
-                    <artifactId>teavm-classlib</artifactId>
-                    <version>${teavm.version}</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <version>3.5.0</version>
-                        <executions>
-                            <execution>
-                                <id>require-jdk11-for-wasm</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireJavaVersion>
-                                            <version>[11,)</version>
-                                            <message>The wasm profile requires JDK 11+ (TeaVM plugin requirement).</message>
-                                        </requireJavaVersion>
-                                    </rules>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.teavm</groupId>
-                        <artifactId>teavm-maven-plugin</artifactId>
-                        <version>${teavm.version}</version>
-                        <executions>
-                            <execution>
-                                <id>teavm-wasm</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>compile</goal>
-                                </goals>
-                                <configuration>
-                                    <mainClass>sudoku.WasmMain</mainClass>
-                                    <targetType>WEBASSEMBLY</targetType>
-                                    <targetDirectory>${wasm.output.dir}</targetDirectory>
-                                    <targetFileName>${wasm.module.name}-teavm.js</targetFileName>
-                                    <optimizationLevel>FULL</optimizationLevel>
-                                    <debugInformationGenerated>false</debugInformationGenerated>
-                                    <sourceMapsGenerated>false</sourceMapsGenerated>
-                                    <minifying>true</minifying>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>3.3.1</version>
-                        <executions>
-                            <execution>
-                                <id>copy-wasm-wrapper</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${wasm.output.dir}</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>scripts/wasm</directory>
-                                            <filtering>true</filtering>
-                                            <includes>
-                                                <include>Hodoku.js</include>
-                                                <include>Hodoku.d.ts</include>
-                                            </includes>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-                <id>teavm-js</id>
-                <properties>
-                    <teavm.version>0.13.1</teavm.version>
-                    <teavm.js.output.dir>${project.build.directory}/teavm-js</teavm.js.output.dir>
-                    <teavm.js.module.name>Hodoku-teavm.js</teavm.js.module.name>
-                </properties>
-
-                <dependencies>
-                    <dependency>
-                        <groupId>org.teavm</groupId>
-                        <artifactId>teavm-classlib</artifactId>
-                        <version>${teavm.version}</version>
-                        <scope>provided</scope>
-                    </dependency>
-                </dependencies>
-
-                <build>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-enforcer-plugin</artifactId>
-                            <version>3.5.0</version>
-                            <executions>
-                                <execution>
-                                    <id>require-jdk11-for-teavm-js</id>
-                                    <phase>validate</phase>
-                                    <goals>
-                                        <goal>enforce</goal>
-                                    </goals>
-                                    <configuration>
-                                        <rules>
-                                            <requireJavaVersion>
-                                                <version>[11,)</version>
-                                                <message>The teavm-js profile requires JDK 11+.</message>
-                                            </requireJavaVersion>
-                                        </rules>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-
-                        <plugin>
-                            <groupId>org.teavm</groupId>
-                            <artifactId>teavm-maven-plugin</artifactId>
-                            <version>${teavm.version}</version>
-                            <executions>
-                                <execution>
-                                    <id>teavm-js</id>
-                                    <phase>package</phase>
-                                    <goals>
-                                        <goal>compile</goal>
-                                    </goals>
-                                    <configuration>
-                                        <mainClass>sudoku.WasmMain</mainClass>
-                                        <targetType>JAVASCRIPT</targetType>
-                                        <targetDirectory>${teavm.js.output.dir}</targetDirectory>
-                                        <targetFileName>${teavm.js.module.name}</targetFileName>
-                                        <optimizationLevel>SIMPLE</optimizationLevel>
-                                        <debugInformationGenerated>false</debugInformationGenerated>
-                                        <sourceMapsGenerated>false</sourceMapsGenerated>
-                                        <minifying>false</minifying>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </build>
-            </profile>
-    </profiles>
 </project>

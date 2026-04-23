@@ -5,3 +5,8 @@ legacy/
 jacoco.exec
 reports/
 target
+
+# Generated npm package artifacts
+npm/hodoku-core/Hodoku-teavm.cjs
+npm/hodoku-core/Hodoku-teavm.js
+npm/hodoku-core/*.tgz

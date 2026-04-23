@@ -1,0 +1,28 @@
+{
+  "name": "hodoku-core",
+  "version": "0.1.0",
+  "description": "Simple Sudoku difficulty rating backed by HoDoKu via TeaVM JavaScript.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "types": "./index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "Hodoku-teavm.cjs"
+  ],
+  "scripts": {
+    "prepack": "node ./scripts/prepack.mjs"
+  },
+  "keywords": [
+    "sudoku",
+    "hodoku",
+    "rating",
+    "difficulty"
+  ],
+  "license": "GPL-3.0-or-later",
+  "sideEffects": false
+}
