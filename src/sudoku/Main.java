@@ -692,7 +692,7 @@ public class Main {
 			for (int i = 0; i < options.size(); i++) {
 				String arg = options.get(i).trim().toLowerCase();
 				if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
-						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
+						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf") || arg.equals("/rate-many")
 						|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
 						|| arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
 								&& options.get(i + 1).trim().charAt(0) != '/')) {
@@ -762,6 +762,11 @@ public class Main {
 
 			if (argMap.containsKey("/rate")) {
 				printRating(puzzleString);
+				return;
+			}
+
+			if (argMap.containsKey("/rate-many")) {
+				printRatings(argMap.get("/rate-many"));
 				return;
 			}
 
@@ -1028,19 +1033,43 @@ public class Main {
 	// end of handleCliArgs
 
 	private static void printRating(String puzzleString) {
-		if (puzzleString == null || puzzleString.trim().isEmpty()) {
-			System.out.println("HODOKU_RATING {\"error\":\"missing-puzzle\"}");
+		System.out.println("HODOKU_RATING " + createRatingOutput(puzzleString));
+	}
+
+	private static void printRatings(String puzzleList) {
+		if (puzzleList == null || puzzleList.trim().isEmpty()) {
+			System.out.println("HODOKU_RATINGS {\"error\":\"missing-puzzles\"}");
 			return;
+		}
+
+		String[] puzzleArray = puzzleList.split("\\|");
+		StringBuilder builder = new StringBuilder("HODOKU_RATINGS [");
+		for (int i = 0; i < puzzleArray.length; i++) {
+			if (i > 0) {
+				builder.append(',');
+			}
+			builder.append(createRatingOutput(puzzleArray[i].trim()));
+		}
+		builder.append(']');
+		System.out.println(builder.toString());
+	}
+
+	private static String createRatingOutput(String puzzleString) {
+		if (puzzleString == null || puzzleString.trim().isEmpty()) {
+			return "{\"error\":\"missing-puzzle\"}";
 		}
 
 		Sudoku2 sudoku = new Sudoku2();
-		sudoku.setSudoku(puzzleString.trim());
-		if (!sudoku.checkSudoku()) {
-			System.out.println("HODOKU_RATING {\"error\":\"invalid-puzzle\"}");
-			return;
+		String trimmedPuzzle = puzzleString.trim();
+		sudoku.setSudoku(trimmedPuzzle);
+		Sudoku2 validationSudoku = new Sudoku2();
+		validationSudoku.setSudoku(trimmedPuzzle);
+		if (!validationSudoku.checkSudoku()) {
+			return "{\"error\":\"invalid-puzzle\"}";
 		}
 
 		SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
+		SudokuGeneratorFactory.getDefaultGeneratorInstance().validSolution(sudoku);
 		solver.setSudoku(sudoku);
 		boolean solved = solver.solve();
 		boolean requiresGuessing = false;
@@ -1059,13 +1088,9 @@ public class Main {
 			}
 		}
 
-		System.out.println(
-				"HODOKU_RATING {\"level\":\"" + solver.getLevel().getName() + "\","
-				+ "\"score\":" + solver.getScore() + ","
-				+ "\"solved\":" + solved + ","
-				+ "\"requiresGuessing\":" + requiresGuessing + ","
-				+ "\"requiresTemplates\":" + requiresTemplates + ","
-				+ "\"gaveUp\":" + gaveUp + "}");
+		return "{\"level\":\"" + solver.getLevel().getName() + "\"," + "\"score\":" + solver.getScore()
+				+ "," + "\"solved\":" + solved + "," + "\"requiresGuessing\":" + requiresGuessing + ","
+				+ "\"requiresTemplates\":" + requiresTemplates + "," + "\"gaveUp\":" + gaveUp + "}";
 	}
 
 	/**
@@ -1229,6 +1254,8 @@ public class Main {
 				+ "  /bsa: execute \"Find all Steps\" for [puzzle] (output written to\r\n"
 				+ "       <file>.out.txt or a file given by /o)\r\n"
 				+ "  /bt <file>: batch test using puzzle collection in <file> (output as in /bs)\r\n"
+				+ "  /rate <puzzle>: print one machine-readable rating result\r\n"
+				+ "  /rate-many <p1|p2|...>: print machine-readable rating results for multiple puzzles\r\n"
 				+ "  /bts <step>[,<step>...]: find all occurences of <step> after any non single\r\n"
 				+ "      step and check all eliminations against the solution of the puzzle\r\n"
 				+ "  /vs: print solution in output file (only valid with /bs)\r\n"

@@ -16,7 +16,8 @@
     "Hodoku-teavm.cjs"
   ],
   "scripts": {
-    "prepack": "node ./scripts/prepack.mjs"
+    "prepack": "node ./scripts/prepack.mjs",
+    "parity-tool": "node ./scripts/parity-tool.mjs"
   },
   "keywords": [
     "sudoku",

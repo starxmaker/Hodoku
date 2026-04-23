@@ -1,8 +1,6 @@
 # hodoku-core-js
 
-Minimal JavaScript wrapper around HoDoKu's TeaVM build. 
-
-For the moment, just score rating is exposed, but if you need access to the core app, you can directly communicate with it as you would do with Hodoku CLI.
+Minimal JavaScript wrapper around HoDoKu's TeaVM build. For the moment, just score rating is exposed.
 
 ## API
 
@@ -25,6 +23,16 @@ const ratings = await rateSudokus([
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
   '.....6....59.....82....8....45........3........6..3.54...325..6..................',
 ]);
+console.log(ratings);
+
+const batchLines = await executeCommand([
+  '/rate-many',
+  [
+    '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
+    '.....6....59.....82....8....45........3........6..3.54...325..6..................',
+  ].join('|'),
+]);
+console.log(batchLines);
 
 const cappedByScore = await rateSudokuWithMaxScore(
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
@@ -79,6 +87,8 @@ Available exports:
 - `rateSudokusWithDifficulty(puzzles, maxDifficulty)`
 
 `executeCommand(commandParts)` sends the raw command parts directly to the TeaVM HoDoKu core and returns the emitted output as an array of lines.
+
+`rateSudokus(puzzles)` uses the TeaVM-safe core batch command `/rate-many` internally instead of looping puzzle-by-puzzle in JavaScript.
 
 ## Accepted Puzzle Input
 

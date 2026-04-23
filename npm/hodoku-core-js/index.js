@@ -1,4 +1,5 @@
 const RATING_MARKER = 'HODOKU_RATING ';
+const RATINGS_MARKER = 'HODOKU_RATINGS ';
 const DIFFICULTY_LEVELS = ['Incomplete', 'Easy', 'Medium', 'Hard', 'Unfair', 'Extreme'];
 const DIFFICULTY_RANK = new Map(DIFFICULTY_LEVELS.map((level, index) => [level.toLowerCase(), index]));
 
@@ -56,21 +57,51 @@ function createOutputCapture() {
   };
 }
 
-function parseRating(lines) {
+function parseRating(puzzle, lines) {
   const ratingLine = lines.find((line) => line.startsWith(RATING_MARKER));
   if (!ratingLine) {
     const output = lines.join('\n').trim();
-    throw new Error(output ? `HoDoKu rating output not found:\n${output}` : 'HoDoKu rating output not found.');
+    throw new Error(output ? `HoDoKu rating output not found for puzzle "${puzzle}":\n${output}` : `HoDoKu rating output not found for puzzle "${puzzle}".`);
   }
 
-  const rating = JSON.parse(ratingLine.slice(RATING_MARKER.length));
+  let rating = JSON.parse(ratingLine.slice(RATING_MARKER.length));
   if (rating.error) {
-    const error = new Error(`HoDoKu rating failed: ${rating.error}`);
+    const error = new Error(`HoDoKu rating failed for puzzle "${puzzle}": ${rating.error}`);
     error.code = rating.error;
     throw error;
   }
-
+  rating.puzzle = puzzle;
   return rating;
+}
+
+function parseRatings(puzzles, lines) {
+  const ratingLine = lines.find((line) => line.startsWith(RATINGS_MARKER));
+  if (!ratingLine) {
+    const output = lines.join('\n').trim();
+    throw new Error(output ? `HoDoKu batch rating output not found:\n${output}` : 'HoDoKu batch rating output not found.');
+  }
+
+  const ratings = JSON.parse(ratingLine.slice(RATINGS_MARKER.length));
+  if (!Array.isArray(ratings)) {
+    throw new Error('HoDoKu batch rating output is invalid.');
+  }
+
+  if (ratings.length !== puzzles.length) {
+    throw new Error(`HoDoKu batch rating count mismatch: expected ${puzzles.length}, got ${ratings.length}.`);
+  }
+
+  return ratings.map((rating, index) => {
+    if (rating.error) {
+      const error = new Error(`HoDoKu rating failed for puzzle "${puzzles[index]}": ${rating.error}`);
+      error.code = rating.error;
+      throw error;
+    }
+
+    return {
+      ...rating,
+      puzzle: puzzles[index],
+    };
+  });
 }
 
 function normalizePuzzle(puzzle) {
@@ -176,18 +207,13 @@ export async function executeCommand(commandParts) {
 export async function rateSudoku(puzzle) {
   const normalizedPuzzle = normalizePuzzle(puzzle);
 
-  return parseRating(await executeCommand(['/rate', normalizedPuzzle]));
+  return parseRating(normalizedPuzzle, await executeCommand(['/rate', normalizedPuzzle]));
 }
 
 export async function rateSudokus(puzzles) {
   const normalizedPuzzles = normalizePuzzles(puzzles);
-  const ratings = [];
 
-  for (const puzzle of normalizedPuzzles) {
-    ratings.push(await rateSudoku(puzzle));
-  }
-
-  return ratings;
+  return parseRatings(normalizedPuzzles, await executeCommand(['/rate-many', normalizedPuzzles.join('|')]));
 }
 
 export async function rateSudokuWithMaxScore(puzzle, maxScore) {

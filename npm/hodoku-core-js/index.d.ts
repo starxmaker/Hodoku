@@ -1,5 +1,6 @@
 export interface HodokuRating {
-  level: string;
+  puzzle: string;
+  level: HodokuDifficulty;
   score: number;
   solved: boolean;
   requiresGuessing: boolean;
