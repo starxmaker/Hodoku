@@ -94,6 +94,14 @@ function normalizePuzzles(puzzles) {
   return puzzles.map((puzzle) => normalizePuzzle(puzzle));
 }
 
+function normalizeCommandParts(commandParts) {
+  if (!Array.isArray(commandParts)) {
+    throw new TypeError('commandParts must be an array of strings');
+  }
+
+  return commandParts.map((part) => normalizePuzzle(part));
+}
+
 function normalizeMaxScore(maxScore) {
   if (typeof maxScore !== 'number' || !Number.isFinite(maxScore)) {
     throw new TypeError('maxScore must be a finite number');
@@ -147,13 +155,19 @@ function addDifficultyCap(rating, maxDifficulty) {
 export async function rateSudoku(puzzle) {
   const normalizedPuzzle = normalizePuzzle(puzzle);
 
+  return parseRating(await executeCommand(['/rate', normalizedPuzzle]));
+}
+
+export async function executeCommand(commandParts) {
+  const normalizedCommandParts = normalizeCommandParts(commandParts);
+
   const runtime = await loadRuntime();
   const capture = createOutputCapture();
 
   try {
     await new Promise((resolve, reject) => {
       try {
-        runtime.main(['/rate', normalizedPuzzle], () => resolve());
+        runtime.main(normalizedCommandParts, () => resolve());
       } catch (error) {
         reject(error);
       }
@@ -162,7 +176,7 @@ export async function rateSudoku(puzzle) {
     capture.restore();
   }
 
-  return parseRating(capture.lines);
+  return capture.lines;
 }
 
 export async function rateSudokus(puzzles) {

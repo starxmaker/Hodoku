@@ -1,16 +1,22 @@
 # hodoku-core
 
-Minimal JavaScript wrapper around HoDoKu's TeaVM build for simple Sudoku rating.
+Minimal JavaScript wrapper around HoDoKu's TeaVM build. 
+
+For the moment, just score rating is exposed, but if you need access to the core app, you can directly communicate with it as you would do with Hodoku CLI.
 
 ## API
 
 ```js
 import {
+  executeCommand,
   rateSudoku,
   rateSudokus,
   rateSudokuWithMaxScore,
   rateSudokuWithDifficulty,
 } from 'hodoku-core';
+
+const helpLines = await executeCommand(['/h']);
+console.log(helpLines);
 
 const rating = await rateSudoku('53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79');
 console.log(rating);
@@ -64,12 +70,15 @@ Difficulty-capped helpers add:
 
 Available exports:
 
+- `executeCommand(commandParts)`
 - `rateSudoku(puzzle)`
 - `rateSudokus(puzzles)`
 - `rateSudokuWithMaxScore(puzzle, maxScore)`
 - `rateSudokusWithMaxScore(puzzles, maxScore)`
 - `rateSudokuWithDifficulty(puzzle, maxDifficulty)`
 - `rateSudokusWithDifficulty(puzzles, maxDifficulty)`
+
+`executeCommand(commandParts)` sends the raw command parts directly to the TeaVM HoDoKu core and returns the emitted output as an array of lines.
 
 ## Accepted Puzzle Input
 

@@ -19,6 +19,7 @@ export interface HodokuDifficultyRating extends HodokuRating {
   withinDifficultyCap: boolean;
 }
 
+export declare function executeCommand(commandParts: string[]): Promise<string[]>;
 export declare function rateSudoku(puzzle: string): Promise<HodokuRating>;
 export declare function rateSudokus(puzzles: string[]): Promise<HodokuRating[]>;
 export declare function rateSudokuWithMaxScore(puzzle: string, maxScore: number): Promise<HodokuMaxScoreRating>;
