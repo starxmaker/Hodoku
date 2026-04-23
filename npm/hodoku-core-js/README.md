@@ -1,4 +1,4 @@
-# hodoku-core
+# hodoku-core-js
 
 Minimal JavaScript wrapper around HoDoKu's TeaVM build. 
 
@@ -13,7 +13,7 @@ import {
   rateSudokus,
   rateSudokuWithMaxScore,
   rateSudokuWithDifficulty,
-} from 'hodoku-core';
+} from 'hodoku-core-js';
 
 const helpLines = await executeCommand(['/h']);
 console.log(helpLines);
@@ -96,7 +96,7 @@ From the repository root:
 
 ```sh
 mvn -DskipTests package
-cd npm/hodoku-core
+cd npm_recovered/hodoku-core-js
 npm pack --dry-run
 ```
 
@@ -104,7 +104,7 @@ npm pack --dry-run
 
 ## License
 
-`hodoku-core` is distributed under `GPL-3.0-or-later`.
+`hodoku-core-js` is distributed under `GPL-3.0-or-later`.
 
 The package includes the full license text in `LICENSE` and is based on HoDoKu, which carries the following copyright notices:
 

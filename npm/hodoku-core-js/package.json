@@ -1,5 +1,5 @@
 {
-  "name": "hodoku-core",
+  "name": "hodoku-core-js",
   "version": "0.1.0",
   "description": "Simple Sudoku difficulty rating backed by HoDoKu via TeaVM JavaScript.",
   "type": "module",

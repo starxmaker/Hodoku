@@ -152,12 +152,6 @@ function addDifficultyCap(rating, maxDifficulty) {
   };
 }
 
-export async function rateSudoku(puzzle) {
-  const normalizedPuzzle = normalizePuzzle(puzzle);
-
-  return parseRating(await executeCommand(['/rate', normalizedPuzzle]));
-}
-
 export async function executeCommand(commandParts) {
   const normalizedCommandParts = normalizeCommandParts(commandParts);
 
@@ -177,6 +171,12 @@ export async function executeCommand(commandParts) {
   }
 
   return capture.lines;
+}
+
+export async function rateSudoku(puzzle) {
+  const normalizedPuzzle = normalizePuzzle(puzzle);
+
+  return parseRating(await executeCommand(['/rate', normalizedPuzzle]));
 }
 
 export async function rateSudokus(puzzles) {
