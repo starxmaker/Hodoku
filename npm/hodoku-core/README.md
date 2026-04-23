@@ -92,3 +92,12 @@ npm pack --dry-run
 ```
 
 `npm pack` triggers `prepack`, which copies the generated TeaVM bundle from `target/teavm-js/Hodoku-teavm.js` into the package as `Hodoku-teavm.cjs`.
+
+## License
+
+`hodoku-core` is distributed under `GPL-3.0-or-later`.
+
+The package includes the full license text in `LICENSE` and is based on HoDoKu, which carries the following copyright notices:
+
+- Copyright (C) 2019-20 PseudoFish
+- Copyright (C) 2008-12 Bernhard Hobiger
