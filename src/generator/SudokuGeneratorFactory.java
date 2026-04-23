@@ -85,7 +85,11 @@ public class SudokuGeneratorFactory {
 
 	/** Start the thread */
 	static {
-		thread.start();
+		thread.setDaemon(true);
+		thread.setName("SudokuGeneratorFactory-Cleanup");
+		if (!"TeaVM".equalsIgnoreCase(System.getProperty("os.name", ""))) {
+			thread.start();
+		}
 	}
 
 	/**

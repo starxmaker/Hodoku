@@ -91,7 +91,11 @@ public class SudokuSolverFactory {
 
 	/** Start the thread */
 	static {
-		thread.start();
+		thread.setDaemon(true);
+		thread.setName("SudokuSolverFactory-Cleanup");
+		if (!"TeaVM".equalsIgnoreCase(System.getProperty("os.name", ""))) {
+			thread.start();
+		}
 	}
 
 	/**
