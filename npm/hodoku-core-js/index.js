@@ -2,6 +2,7 @@ const RATING_MARKER = 'HODOKU_RATING ';
 const RATINGS_MARKER = 'HODOKU_RATINGS ';
 const DIFFICULTY_LEVELS = ['Incomplete', 'Easy', 'Medium', 'Hard', 'Unfair', 'Extreme'];
 const DIFFICULTY_RANK = new Map(DIFFICULTY_LEVELS.map((level, index) => [level.toLowerCase(), index]));
+const STDOUT_CALLBACK = '__hodokuStdout';
 
 let runtimePromise;
 
@@ -28,31 +29,28 @@ function toLogLine(args) {
     .join(' ');
 }
 
-function createOutputCapture() {
+function createOutputCapture(onNewLine) {
   const lines = [];
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
+  const originalStdout = globalThis[STDOUT_CALLBACK];
+
+  const capture = (line) => {
+    const normalizedLine = typeof line === 'string' ? line : String(line);
+    lines.push(normalizedLine);
+    if (onNewLine) {
+      onNewLine(normalizedLine);
+    }
   };
 
-  const capture = (...args) => {
-    lines.push(toLogLine(args));
-  };
-
-  console.log = capture;
-  console.info = capture;
-  console.warn = capture;
-  console.error = capture;
+  globalThis[STDOUT_CALLBACK] = capture;
 
   return {
     lines,
     restore() {
-      console.log = originalConsole.log;
-      console.info = originalConsole.info;
-      console.warn = originalConsole.warn;
-      console.error = originalConsole.error;
+      if (originalStdout === undefined) {
+        delete globalThis[STDOUT_CALLBACK];
+      } else {
+        globalThis[STDOUT_CALLBACK] = originalStdout;
+      }
     },
   };
 }
@@ -133,30 +131,92 @@ function normalizeCommandParts(commandParts) {
   return commandParts.map((part) => normalizePuzzle(part));
 }
 
-function normalizeMaxScore(maxScore) {
-  if (typeof maxScore !== 'number' || !Number.isFinite(maxScore)) {
-    throw new TypeError('maxScore must be a finite number');
+function normalizeScore(value, optionName) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new TypeError(`${optionName} must be a finite number`);
   }
 
-  return maxScore;
+  return value;
 }
 
-function normalizeDifficultyCap(maxDifficulty) {
-  if (typeof maxDifficulty !== 'string') {
-    throw new TypeError('maxDifficulty must be a string');
+function normalizeMaxScore(maxScore) {
+  return normalizeScore(maxScore, 'maxScore');
+}
+
+function normalizeDifficulty(difficulty, optionName) {
+  if (typeof difficulty !== 'string') {
+    throw new TypeError(`${optionName} must be a string`);
   }
 
-  const normalizedDifficulty = maxDifficulty.trim().toLowerCase();
+  const normalizedDifficulty = difficulty.trim().toLowerCase();
   if (normalizedDifficulty.length === 0) {
-    throw new TypeError('maxDifficulty must not be empty');
+    throw new TypeError(`${optionName} must not be empty`);
   }
 
   const rank = DIFFICULTY_RANK.get(normalizedDifficulty);
   if (rank === undefined) {
-    throw new RangeError(`maxDifficulty must be one of: ${DIFFICULTY_LEVELS.join(', ')}`);
+    throw new RangeError(`${optionName} must be one of: ${DIFFICULTY_LEVELS.join(', ')}`);
   }
 
   return DIFFICULTY_LEVELS[rank];
+}
+
+function normalizeDifficultyCap(maxDifficulty) {
+  return normalizeDifficulty(maxDifficulty, 'maxDifficulty');
+}
+
+function normalizeMatchConstraints(constraints) {
+  if (constraints === null || typeof constraints !== 'object' || Array.isArray(constraints)) {
+    throw new TypeError('constraints must be an object');
+  }
+
+  const normalizedConstraints = {};
+
+  if (constraints.difficulty !== undefined) {
+    normalizedConstraints.difficulty = normalizeDifficulty(constraints.difficulty, 'difficulty');
+  }
+
+  if (constraints.minScore !== undefined) {
+    normalizedConstraints.minScore = normalizeScore(constraints.minScore, 'minScore');
+  }
+
+  if (constraints.maxScore !== undefined) {
+    normalizedConstraints.maxScore = normalizeScore(constraints.maxScore, 'maxScore');
+  }
+
+  if (
+    normalizedConstraints.difficulty === undefined
+    && normalizedConstraints.minScore === undefined
+    && normalizedConstraints.maxScore === undefined
+  ) {
+    throw new TypeError('constraints must include at least one of: difficulty, minScore, maxScore');
+  }
+
+  if (
+    normalizedConstraints.minScore !== undefined
+    && normalizedConstraints.maxScore !== undefined
+    && normalizedConstraints.minScore > normalizedConstraints.maxScore
+  ) {
+    throw new RangeError('minScore must be less than or equal to maxScore');
+  }
+
+  return normalizedConstraints;
+}
+
+function matchesRatingConstraints(rating, constraints) {
+  if (constraints.difficulty !== undefined && rating.level !== constraints.difficulty) {
+    return false;
+  }
+
+  if (constraints.minScore !== undefined && rating.score < constraints.minScore) {
+    return false;
+  }
+
+  if (constraints.maxScore !== undefined && rating.score > constraints.maxScore) {
+    return false;
+  }
+
+  return true;
 }
 
 function addMaxScoreCap(rating, maxScore) {
@@ -183,11 +243,11 @@ function addDifficultyCap(rating, maxDifficulty) {
   };
 }
 
-export async function executeCommand(commandParts) {
+export async function executeCommand(commandParts, onNewLine) {
   const normalizedCommandParts = normalizeCommandParts(commandParts);
 
   const runtime = await loadRuntime();
-  const capture = createOutputCapture();
+  const capture = createOutputCapture(onNewLine);
 
   try {
     await new Promise((resolve, reject) => {
@@ -214,6 +274,20 @@ export async function rateSudokus(puzzles) {
   const normalizedPuzzles = normalizePuzzles(puzzles);
 
   return parseRatings(normalizedPuzzles, await executeCommand(['/rate-many', normalizedPuzzles.join('|')]));
+}
+
+export async function rateSudokusUntilMatch(puzzles, constraints) {
+  const normalizedPuzzles = normalizePuzzles(puzzles);
+  const normalizedConstraints = normalizeMatchConstraints(constraints);
+
+  for (const puzzle of normalizedPuzzles) {
+    const rating = await rateSudoku(puzzle);
+    if (matchesRatingConstraints(rating, normalizedConstraints)) {
+      return rating;
+    }
+  }
+
+  return null;
 }
 
 export async function rateSudokuWithMaxScore(puzzle, maxScore) {

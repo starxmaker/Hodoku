@@ -35,6 +35,8 @@ public class TeaVMMain {
      */
     public static void main(String[] args) {
 
+        TeaVMStdout.install();
+
         Options.initDefaults();
 
         if (args == null || args.length == 0) {

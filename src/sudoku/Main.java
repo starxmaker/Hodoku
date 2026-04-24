@@ -138,6 +138,7 @@ public class Main {
 		batchSolve(
 			fileName, 
 			puzzleString, 
+			null,
 			printSolution, 
 			printSolutionPath, 
 			printStatistic, 
@@ -163,9 +164,40 @@ public class Main {
 			boolean bruteForceTest, 
 			List<SolutionType> testTypes) {
 
+		batchSolve(
+			fileName,
+			puzzleString,
+			null,
+			printSolution,
+			printSolutionPath,
+			printStatistic,
+			cMode,
+			types,
+			outFile,
+			findAllSteps,
+			bruteForceTest,
+			testTypes
+		);
+	}
+
+	private void batchSolve(
+			String fileName, 
+			String puzzleString,
+			String[] puzzleStrings,
+			boolean printSolution, 
+			boolean printSolutionPath,
+			boolean printStatistic, 
+			ClipboardMode cMode, 
+			Set<SolutionType> types, 
+			String outFile, 
+			boolean findAllSteps,
+			boolean bruteForceTest, 
+			List<SolutionType> testTypes) {
+
 		BatchSolveThread thread = new BatchSolveThread(
 			fileName, 
 			puzzleString, 
+			puzzleStrings,
 			printSolution, 
 			printSolutionPath,
 			printStatistic, 
@@ -223,6 +255,49 @@ public class Main {
 			
 			SudokuSolverFactory.getDefaultSolverInstance().getStepFinder().printStatistics();
 		}
+	}
+
+	public void batchSolveGrouped(
+			String puzzleList,
+			boolean printSolution,
+			boolean printSolutionPath,
+			boolean printStatistic,
+			ClipboardMode cMode,
+			Set<SolutionType> types,
+			String outFile,
+			boolean findAllSteps) {
+
+		batchSolve(
+			null,
+			null,
+			splitPuzzleList(puzzleList),
+			printSolution,
+			printSolutionPath,
+			printStatistic,
+			cMode,
+			types,
+			outFile,
+			findAllSteps,
+			false,
+			null
+		);
+	}
+
+	private static String[] splitPuzzleList(String puzzleList) {
+		if (puzzleList == null) {
+			return new String[0];
+		}
+
+		String[] rawPuzzles = puzzleList.split("\\|");
+		List<String> puzzles = new ArrayList<String>();
+		for (String rawPuzzle : rawPuzzles) {
+			String trimmedPuzzle = rawPuzzle.trim();
+			if (!trimmedPuzzle.isEmpty()) {
+				puzzles.add(trimmedPuzzle);
+			}
+		}
+
+		return puzzles.toArray(new String[puzzles.size()]);
 	}
 
 	void sortPuzzleFile(String fileName, List<StepType> typeList, String outFileName) {
@@ -691,8 +766,8 @@ public class Main {
 			args = null; // safe guard against refactoring error
 			for (int i = 0; i < options.size(); i++) {
 				String arg = options.get(i).trim().toLowerCase();
-				if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
-						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf") || arg.equals("/rate-many")
+				if (arg.equals("/bs") || arg.equals("/bsg") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
+						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
 						|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
 						|| arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
 								&& options.get(i + 1).trim().charAt(0) != '/')) {
@@ -762,11 +837,6 @@ public class Main {
 
 			if (argMap.containsKey("/rate")) {
 				printRating(puzzleString);
-				return;
-			}
-
-			if (argMap.containsKey("/rate-many")) {
-				printRatings(argMap.get("/rate-many"));
 				return;
 			}
 
@@ -955,6 +1025,14 @@ public class Main {
 				return;
 			}
 
+			if (argMap.containsKey("/bsg")) {
+				printIgnoredOptions("/bsg", argMap);
+				new Main().batchSolveGrouped(argMap.get("/bsg"), printSolution, printSolutionPath, printStatistics,
+						clipboardMode, outTypes, outFile, false);
+
+				return;
+			}
+
 			if (argMap.containsKey("/bsaf")) {
 				printIgnoredOptions("/bsaf", argMap);
 				String fileName = argMap.get("/bsaf");
@@ -1033,43 +1111,19 @@ public class Main {
 	// end of handleCliArgs
 
 	private static void printRating(String puzzleString) {
-		System.out.println("HODOKU_RATING " + createRatingOutput(puzzleString));
-	}
-
-	private static void printRatings(String puzzleList) {
-		if (puzzleList == null || puzzleList.trim().isEmpty()) {
-			System.out.println("HODOKU_RATINGS {\"error\":\"missing-puzzles\"}");
+		if (puzzleString == null || puzzleString.trim().isEmpty()) {
+			System.out.println("HODOKU_RATING {\"error\":\"missing-puzzle\"}");
 			return;
 		}
 
-		String[] puzzleArray = puzzleList.split("\\|");
-		StringBuilder builder = new StringBuilder("HODOKU_RATINGS [");
-		for (int i = 0; i < puzzleArray.length; i++) {
-			if (i > 0) {
-				builder.append(',');
-			}
-			builder.append(createRatingOutput(puzzleArray[i].trim()));
-		}
-		builder.append(']');
-		System.out.println(builder.toString());
-	}
-
-	private static String createRatingOutput(String puzzleString) {
-		if (puzzleString == null || puzzleString.trim().isEmpty()) {
-			return "{\"error\":\"missing-puzzle\"}";
-		}
-
 		Sudoku2 sudoku = new Sudoku2();
-		String trimmedPuzzle = puzzleString.trim();
-		sudoku.setSudoku(trimmedPuzzle);
-		Sudoku2 validationSudoku = new Sudoku2();
-		validationSudoku.setSudoku(trimmedPuzzle);
-		if (!validationSudoku.checkSudoku()) {
-			return "{\"error\":\"invalid-puzzle\"}";
+		sudoku.setSudoku(puzzleString.trim());
+		if (!sudoku.checkSudoku()) {
+			System.out.println("HODOKU_RATING {\"error\":\"invalid-puzzle\"}");
+			return;
 		}
 
 		SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
-		SudokuGeneratorFactory.getDefaultGeneratorInstance().validSolution(sudoku);
 		solver.setSudoku(sudoku);
 		boolean solved = solver.solve();
 		boolean requiresGuessing = false;
@@ -1088,9 +1142,13 @@ public class Main {
 			}
 		}
 
-		return "{\"level\":\"" + solver.getLevel().getName() + "\"," + "\"score\":" + solver.getScore()
-				+ "," + "\"solved\":" + solved + "," + "\"requiresGuessing\":" + requiresGuessing + ","
-				+ "\"requiresTemplates\":" + requiresTemplates + "," + "\"gaveUp\":" + gaveUp + "}";
+		System.out.println(
+				"HODOKU_RATING {\"level\":\"" + solver.getLevel().getName() + "\","
+				+ "\"score\":" + solver.getScore() + ","
+				+ "\"solved\":" + solved + ","
+				+ "\"requiresGuessing\":" + requiresGuessing + ","
+				+ "\"requiresTemplates\":" + requiresTemplates + ","
+				+ "\"gaveUp\":" + gaveUp + "}");
 	}
 
 	/**
@@ -1249,13 +1307,13 @@ public class Main {
 				+ "      0: easy; 1: medium; 2: hard; 3: unfair; 4: extreme\r\n"
 				+ "  /bs <file>: batch solve puzzles in <file> (output written to <file>.out.txt\r\n"
 				+ "       or a file given by /o)\r\n"
+				+ "  /bsg <p1|p2|...>: batch solve puzzles passed directly on the command line\r\n"
+				+ "       as a | separated list (default output: bsg.out.txt, or use /o)\r\n"
 				+ "  /bsaf <file>: batch process puzzles in <file> (output as in /bs);\r\n"
 				+ "       for each puzzle \"Find all Steps\" is executed\r\n"
 				+ "  /bsa: execute \"Find all Steps\" for [puzzle] (output written to\r\n"
 				+ "       <file>.out.txt or a file given by /o)\r\n"
 				+ "  /bt <file>: batch test using puzzle collection in <file> (output as in /bs)\r\n"
-				+ "  /rate <puzzle>: print one machine-readable rating result\r\n"
-				+ "  /rate-many <p1|p2|...>: print machine-readable rating results for multiple puzzles\r\n"
 				+ "  /bts <step>[,<step>...]: find all occurences of <step> after any non single\r\n"
 				+ "      step and check all eliminations against the solution of the puzzle\r\n"
 				+ "  /vs: print solution in output file (only valid with /bs)\r\n"
@@ -1539,6 +1597,8 @@ class BatchSolveThread extends Thread {
 
 	private String fileName;
 	private String puzzleString;
+	private String[] puzzleStrings;
+	private int nextPuzzleIndex = 0;
 	private boolean printSolution;
 	private boolean printSolutionPath;
 	private boolean printStatistic;
@@ -1564,6 +1624,7 @@ class BatchSolveThread extends Thread {
 	BatchSolveThread(
 			String fn, 
 			String pStr, 
+			String[] pStrs,
 			boolean ps, 
 			boolean pp, 
 			boolean pst, 
@@ -1576,6 +1637,7 @@ class BatchSolveThread extends Thread {
 		
 		fileName = fn;
 		puzzleString = pStr;
+		puzzleStrings = pStrs;
 		printSolution = ps;
 		printSolutionPath = pp;
 		printStatistic = pst;
@@ -1751,7 +1813,13 @@ class BatchSolveThread extends Thread {
 			}
 
 			if (outFileName == null) {
-				outFileName = fileName + ".out.txt";
+				if (fileName != null) {
+					outFileName = fileName + ".out.txt";
+				} else if (puzzleStrings != null) {
+					outFileName = "bsg.out.txt";
+				} else {
+					outFileName = fileName + ".out.txt";
+				}
 			}
 
 			if (outFileName.equals("stdout")) {
@@ -1773,12 +1841,14 @@ class BatchSolveThread extends Thread {
 			}
 
 			long outTicks = 0;
-			while (!isInterrupted() && 
-					(inFile != null && 
+			while (!isInterrupted() && ((inFile != null && 
 					(line = inFile.readLine()) != null)	|| 
-					(puzzleString != null)) {
+					(puzzleStrings != null && nextPuzzleIndex < puzzleStrings.length) ||
+					(puzzleString != null))) {
 
-				if (puzzleString != null) {
+				if (puzzleStrings != null && nextPuzzleIndex < puzzleStrings.length) {
+					line = puzzleStrings[nextPuzzleIndex++];
+				} else if (puzzleString != null) {
 					line = puzzleString;
 					puzzleString = null;
 				}

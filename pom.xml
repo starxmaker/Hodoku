@@ -36,6 +36,12 @@
             <version>${teavm.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-jso</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
