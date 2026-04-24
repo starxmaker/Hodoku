@@ -48,6 +48,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import java.util.function.Consumer;
 import solver.SudokuSolver;
 import solver.SudokuSolverFactory;
 
@@ -626,7 +627,7 @@ public class Main {
 		handleCliArgsCore(preprocessTeaVMArgs(args));
 	}
 
-	private static String[] preprocessDesktopArgs(String[] args) {
+	private static String[] preprocessArgs(String[] args, Consumer<String> fileConsumer) {
 		List<String> filteredArgs = new ArrayList<String>();
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
@@ -640,7 +641,7 @@ public class Main {
 						Options.resetAll();
 						Options.getInstance();
 					} else {
-						loadConfigFile(fileName);
+						fileConsumer.accept(fileName);
 					}
 				}
 			} else {
@@ -649,22 +650,14 @@ public class Main {
 		}
 		return filteredArgs.toArray(new String[0]);
 	}
+	private static String[] preprocessDesktopArgs(String[] args) {
+		return preprocessArgs(args, Main::loadConfigFile);
+	}
 
 	private static String[] preprocessTeaVMArgs(String[] args) {
-		List<String> filteredArgs = new ArrayList<String>();
-		for (int i = 0; i < args.length; i++) {
-			String arg = args[i];
-			if (arg.equalsIgnoreCase("/c")) {
-				if (i + 1 >= args.length) {
-					System.out.println("No value for parameter: '/c' ignored!");
-				} else {
-					System.out.println("Ignoring configuration file '" + args[++i] + "' in TeaVM mode");
-				}
-			} else {
-				filteredArgs.add(arg);
-			}
-		}
-		return filteredArgs.toArray(new String[0]);
+		return preprocessArgs(args, fileName -> {
+			System.out.println("Config file loading not supported in TeaVM: '" + fileName + "' ignored!");
+		});
 	}
 
 	private static void handleCliArgsCore(String[] args) {
@@ -832,11 +825,6 @@ public class Main {
 				RegressionTester tester = new RegressionTester();
 				tester.runTest(argMap.get("/testf"), true);
 
-				return;
-			}
-
-			if (argMap.containsKey("/rate")) {
-				printRating(puzzleString);
 				return;
 			}
 
@@ -1109,47 +1097,6 @@ public class Main {
 			return;
 		}
 	// end of handleCliArgs
-
-	private static void printRating(String puzzleString) {
-		if (puzzleString == null || puzzleString.trim().isEmpty()) {
-			System.out.println("HODOKU_RATING {\"error\":\"missing-puzzle\"}");
-			return;
-		}
-
-		Sudoku2 sudoku = new Sudoku2();
-		sudoku.setSudoku(puzzleString.trim());
-		if (!sudoku.checkSudoku()) {
-			System.out.println("HODOKU_RATING {\"error\":\"invalid-puzzle\"}");
-			return;
-		}
-
-		SudokuSolver solver = SudokuSolverFactory.getDefaultSolverInstance();
-		solver.setSudoku(sudoku);
-		boolean solved = solver.solve();
-		boolean requiresGuessing = false;
-		boolean requiresTemplates = false;
-		boolean gaveUp = false;
-
-		List<SolutionStep> steps = solver.getSteps();
-		for (int i = 0; i < steps.size(); i++) {
-			SolutionType type = steps.get(i).getType();
-			if (type == SolutionType.BRUTE_FORCE) {
-				requiresGuessing = true;
-			} else if (type == SolutionType.TEMPLATE_DEL || type == SolutionType.TEMPLATE_SET) {
-				requiresTemplates = true;
-			} else if (type == SolutionType.GIVE_UP) {
-				gaveUp = true;
-			}
-		}
-
-		System.out.println(
-				"HODOKU_RATING {\"level\":\"" + solver.getLevel().getName() + "\","
-				+ "\"score\":" + solver.getScore() + ","
-				+ "\"solved\":" + solved + ","
-				+ "\"requiresGuessing\":" + requiresGuessing + ","
-				+ "\"requiresTemplates\":" + requiresTemplates + ","
-				+ "\"gaveUp\":" + gaveUp + "}");
-	}
 
 	/**
 	 * Dynamically loads the Nimbus LaF and resets the default font to a larger

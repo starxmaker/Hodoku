@@ -1,7 +1,7 @@
 {
   "name": "hodoku-core-js",
   "version": "0.1.0",
-  "description": "Simple Sudoku difficulty rating backed by HoDoKu via TeaVM JavaScript.",
+  "description": "Minimal HoDoKu TeaVM command wrapper for JavaScript.",
   "type": "module",
   "main": "./index.js",
   "exports": {
@@ -22,8 +22,8 @@
   "keywords": [
     "sudoku",
     "hodoku",
-    "rating",
-    "difficulty"
+    "cli",
+    "teavm"
   ],
   "license": "GPL-3.0-or-later",
   "sideEffects": false

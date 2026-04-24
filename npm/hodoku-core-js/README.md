@@ -1,32 +1,22 @@
 # hodoku-core-js
 
-Minimal JavaScript wrapper around HoDoKu's TeaVM build. For the moment, just score rating is exposed.
+Minimal JavaScript wrapper around HoDoKu's TeaVM build.
+
+## Limitations
+
 
 ## API
 
 ```js
-import {
-  executeCommand,
-  rateSudoku,
-  rateSudokus,
-  rateSudokuWithMaxScore,
-  rateSudokuWithDifficulty,
-} from 'hodoku-core-js';
+import { executeCommand } from 'hodoku-core-js';
 
 const helpLines = await executeCommand(['/h']);
 console.log(helpLines);
 
-const rating = await rateSudoku('53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79');
-console.log(rating);
-
-const ratings = await rateSudokus([
-  '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
-  '.....6....59.....82....8....45........3........6..3.54...325..6..................',
-]);
-console.log(ratings);
-
 const batchLines = await executeCommand([
-  '/rate-many',
+  '/o',
+  'stdout',
+  '/bsg',
   [
     '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
     '.....6....59.....82....8....45........3........6..3.54...325..6..................',
@@ -34,65 +24,22 @@ const batchLines = await executeCommand([
 ]);
 console.log(batchLines);
 
-const cappedByScore = await rateSudokuWithMaxScore(
-  '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
-  300,
-);
-
-const cappedByDifficulty = await rateSudokuWithDifficulty(
-  '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
-  'Medium',
-);
-```
-
-Returned shape:
-
-```js
-{
-  level: 'Easy',
-  score: 204,
-  solved: true,
-  requiresGuessing: false,
-  requiresTemplates: false,
-  gaveUp: false
-}
-```
-
-Score-capped helpers add:
-
-```js
-{
-  maxScore: 300,
-  withinMaxScore: true
-}
-```
-
-Difficulty-capped helpers add:
-
-```js
-{
-  maxDifficulty: 'Medium',
-  withinDifficultyCap: true
-}
+await executeCommand(['/h'], (line) => {
+  console.log('HoDoKu:', line);
+});
 ```
 
 Available exports:
 
 - `executeCommand(commandParts)`
-- `rateSudoku(puzzle)`
-- `rateSudokus(puzzles)`
-- `rateSudokuWithMaxScore(puzzle, maxScore)`
-- `rateSudokusWithMaxScore(puzzles, maxScore)`
-- `rateSudokuWithDifficulty(puzzle, maxDifficulty)`
-- `rateSudokusWithDifficulty(puzzles, maxDifficulty)`
 
 `executeCommand(commandParts)` sends the raw command parts directly to the TeaVM HoDoKu core and returns the emitted output as an array of lines.
 
-`rateSudokus(puzzles)` uses the TeaVM-safe core batch command `/rate-many` internally instead of looping puzzle-by-puzzle in JavaScript.
+Pass an optional second argument to receive each emitted output line as it arrives.
 
 ## Accepted Puzzle Input
 
-`rateSudoku()` forwards the puzzle to HoDoKu's parser, so it accepts the same common formats used by the CLI, including:
+When a command includes puzzle text, HoDoKu parses the puzzle input using the same formats accepted by the CLI, including:
 
 - An 81-character grid using digits, `.` or `0`
 - HoDoKu library format
@@ -105,7 +52,7 @@ The npm package is prepared but not published automatically.
 From the repository root:
 
 ```sh
-mvn -DskipTests package
+mvn clean package
 cd npm_recovered/hodoku-core-js
 npm pack --dry-run
 ```
