@@ -19,6 +19,8 @@
  */
 package sudoku;
 
+import org.teavm.jso.JSExportClasses;
+
 /**
  * TeaVM entry point for HoDoKu.
  *
@@ -26,6 +28,7 @@ package sudoku;
  * APIs unsupported by TeaVM such as desktop logging/config bootstrapping and
  * XML-backed option loading.</p>
  */
+@JSExportClasses(TeaVMStdout.class)
 public class TeaVMMain {
 
     /**
@@ -36,6 +39,10 @@ public class TeaVMMain {
     public static void main(String[] args) {
 
         TeaVMStdout.install();
+		runCli(args);
+	}
+
+	static void runCli(String[] args) {
 
         Options.initDefaults();
 

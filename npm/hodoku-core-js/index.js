@@ -2,36 +2,42 @@ const RATING_MARKER = 'HODOKU_RATING ';
 const RATINGS_MARKER = 'HODOKU_RATINGS ';
 const DIFFICULTY_LEVELS = ['Incomplete', 'Easy', 'Medium', 'Hard', 'Unfair', 'Extreme'];
 const DIFFICULTY_RANK = new Map(DIFFICULTY_LEVELS.map((level, index) => [level.toLowerCase(), index]));
-const STDOUT_CALLBACK = '__hodokuStdout';
 
 let runtimePromise;
+
+const DEFAULT_CONSOLE_HANDLER = (line, isError) => {
+  const normalizedLine = typeof line === 'string' ? line : String(line);
+  if (isError) {
+    console.error(normalizedLine);
+  } else {
+    console.log(normalizedLine);
+  }
+};
+
+function installDefaultConsoleHandler(runtime) {
+  const runtimeStdout = runtime?.TeaVMStdout;
+  if (
+    typeof runtimeStdout?.setHandler === 'function'
+    && typeof runtimeStdout?.getHandler === 'function'
+    && runtimeStdout.getHandler() == null
+  ) {
+    runtimeStdout.setHandler(DEFAULT_CONSOLE_HANDLER);
+  }
+
+  return runtime;
+}
 
 async function loadRuntime() {
   if (!runtimePromise) {
     runtimePromise = import('./Hodoku-teavm.cjs').then((mod) => mod.default ?? mod);
   }
 
-  return runtimePromise;
+  return installDefaultConsoleHandler(await runtimePromise);
 }
 
-function toLogLine(args) {
-  return args
-    .map((arg) => {
-      if (typeof arg === 'string') {
-        return arg;
-      }
-      try {
-        return JSON.stringify(arg);
-      } catch (error) {
-        return String(arg);
-      }
-    })
-    .join(' ');
-}
-
-function createOutputCapture(onNewLine) {
+function createOutputCapture(runtime, onNewLine) {
   const lines = [];
-  const originalStdout = globalThis[STDOUT_CALLBACK];
+  const runtimeStdout = runtime?.TeaVMStdout;
 
   const capture = (line) => {
     const normalizedLine = typeof line === 'string' ? line : String(line);
@@ -41,15 +47,20 @@ function createOutputCapture(onNewLine) {
     }
   };
 
-  globalThis[STDOUT_CALLBACK] = capture;
+  const originalHandler = typeof runtimeStdout.getHandler === 'function'
+    ? runtimeStdout.getHandler()
+    : null;
+
+  runtimeStdout.setHandler(capture);
 
   return {
     lines,
     restore() {
-      if (originalStdout === undefined) {
-        delete globalThis[STDOUT_CALLBACK];
+      if (originalHandler == null) {
+        runtimeStdout.clearHandler();
+        installDefaultConsoleHandler(runtime);
       } else {
-        globalThis[STDOUT_CALLBACK] = originalStdout;
+        runtimeStdout.setHandler(originalHandler);
       }
     },
   };
@@ -247,7 +258,7 @@ export async function executeCommand(commandParts, onNewLine) {
   const normalizedCommandParts = normalizeCommandParts(commandParts);
 
   const runtime = await loadRuntime();
-  const capture = createOutputCapture(onNewLine);
+  const capture = createOutputCapture(runtime, onNewLine);
 
   try {
     await new Promise((resolve, reject) => {

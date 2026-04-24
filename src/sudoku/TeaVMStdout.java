@@ -2,27 +2,53 @@ package sudoku;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import org.teavm.jso.JSBody;
+import org.teavm.jso.JSExport;
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
 
-final class TeaVMStdout {
+public final class TeaVMStdout {
+
+	@JSFunctor
+	public interface OutputHandler extends JSObject {
+		void accept(String line, boolean isError);
+	}
+
+	private static OutputHandler handler;
+	private static boolean installed;
 
 	private TeaVMStdout() {}
 
-	@JSBody(params = { "line", "isError" }, script = ""
-			+ "if (globalThis.__hodokuStdout) {"
-			+ "  globalThis.__hodokuStdout(line, !!isError);"
-			+ "} else if (globalThis.console) {"
-			+ "  if (isError && globalThis.console.error) {"
-			+ "    globalThis.console.error(line);"
-			+ "  } else if (globalThis.console.log) {"
-			+ "    globalThis.console.log(line);"
-			+ "  }"
-			+ "}")
-	private static native void emit(String line, boolean isError);
+	@JSExport
+	public static void setHandler(OutputHandler newHandler) {
+		handler = newHandler;
+	}
+
+	@JSExport
+	public static OutputHandler getHandler() {
+		return handler;
+	}
+
+	@JSExport
+	public static void clearHandler() {
+		handler = null;
+	}
 
 	static void install() {
+		if (installed) {
+			return;
+		}
 		System.setOut(new PrintStream(new LineOutputStream(false), true));
 		System.setErr(new PrintStream(new LineOutputStream(true), true));
+		installed = true;
+	}
+
+	private static void emit(String line, boolean isError) {
+		OutputHandler currentHandler = handler;
+		if (currentHandler == null) {
+			return;
+		}
+
+		currentHandler.accept(line, isError);
 	}
 
 	private static final class LineOutputStream extends OutputStream {
