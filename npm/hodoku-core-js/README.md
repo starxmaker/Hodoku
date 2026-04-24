@@ -16,11 +16,8 @@ console.log(helpLines);
 const batchLines = await executeCommand([
   '/o',
   'stdout',
-  '/bsg',
-  [
-    '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
-    '.....6....59.....82....8....45........3........6..3.54...325..6..................',
-  ].join('|'),
+  '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
+  '.....6....59.....82....8....45........3........6..3.54...325..6..................',
 ]);
 console.log(batchLines);
 
@@ -44,6 +41,8 @@ When a command includes puzzle text, HoDoKu parses the puzzle input using the sa
 - An 81-character grid using digits, `.` or `0`
 - HoDoKu library format
 - Other HoDoKu-supported single-puzzle text formats
+
+If more than one positional puzzle is passed, HoDoKu applies the grouped inline batch-solve mode automatically.
 
 ## Packaging Workflow
 

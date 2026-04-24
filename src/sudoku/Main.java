@@ -259,7 +259,7 @@ public class Main {
 	}
 
 	public void batchSolveGrouped(
-			String puzzleList,
+			String[] puzzleStrings,
 			boolean printSolution,
 			boolean printSolutionPath,
 			boolean printStatistic,
@@ -271,7 +271,7 @@ public class Main {
 		batchSolve(
 			null,
 			null,
-			splitPuzzleList(puzzleList),
+			puzzleStrings,
 			printSolution,
 			printSolutionPath,
 			printStatistic,
@@ -282,23 +282,6 @@ public class Main {
 			false,
 			null
 		);
-	}
-
-	private static String[] splitPuzzleList(String puzzleList) {
-		if (puzzleList == null) {
-			return new String[0];
-		}
-
-		String[] rawPuzzles = puzzleList.split("\\|");
-		List<String> puzzles = new ArrayList<String>();
-		for (String rawPuzzle : rawPuzzles) {
-			String trimmedPuzzle = rawPuzzle.trim();
-			if (!trimmedPuzzle.isEmpty()) {
-				puzzles.add(trimmedPuzzle);
-			}
-		}
-
-		return puzzles.toArray(new String[puzzles.size()]);
 	}
 
 	void sortPuzzleFile(String fileName, List<StepType> typeList, String outFileName) {
@@ -753,13 +736,13 @@ public class Main {
 //            }
 			// no console frame redirection needed in CLI-only build
 
-			// store all args in a map (except puzzle string)
-			String puzzleString = null;
+			// store all args in a map (except positional puzzles)
+			List<String> positionalPuzzles = new ArrayList<String>();
 			Map<String, String> argMap = new TreeMap<String, String>();
 			args = null; // safe guard against refactoring error
 			for (int i = 0; i < options.size(); i++) {
 				String arg = options.get(i).trim().toLowerCase();
-				if (arg.equals("/bs") || arg.equals("/bsg") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
+				if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
 						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
 						|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
 						|| arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
@@ -784,17 +767,17 @@ public class Main {
 						argMap.put(arg, null);
 					} else {
 						// has to be puzzle
-						puzzleString = arg;
+						positionalPuzzles.add(arg);
 						// could be PM - format check is impossible
-//                        if (puzzleString.length() != 81) {
+//                        if (arg.length() != 81) {
 //                            System.out.println("Puzzle string is not 81 characters long - ignored!");
-//                            puzzleString = null;
+//                            positionalPuzzles.remove(positionalPuzzles.size() - 1);
 //                        } else {
-//                            for (int j = 0; j < puzzleString.length(); j++) {
+//                            for (int j = 0; j < arg.length(); j++) {
 //                                if (!Character.isDigit(arg.charAt(j)) && arg.charAt(j) != '.') {
 //                                    System.out.println("Invalid character in puzzle string (" +
-//                                            puzzleString.charAt(j) + ") - puzzle ignored!");
-//                                    puzzleString = null;
+//                                            arg.charAt(j) + ") - puzzle ignored!");
+//                                    positionalPuzzles.remove(positionalPuzzles.size() - 1);
 //                                }
 //                            }
 //                        }
@@ -1013,14 +996,6 @@ public class Main {
 				return;
 			}
 
-			if (argMap.containsKey("/bsg")) {
-				printIgnoredOptions("/bsg", argMap);
-				new Main().batchSolveGrouped(argMap.get("/bsg"), printSolution, printSolutionPath, printStatistics,
-						clipboardMode, outTypes, outFile, false);
-
-				return;
-			}
-
 			if (argMap.containsKey("/bsaf")) {
 				printIgnoredOptions("/bsaf", argMap);
 				String fileName = argMap.get("/bsaf");
@@ -1035,13 +1010,13 @@ public class Main {
 				printIgnoredOptions("/bsa", argMap);
 				System.out.println("bsa: started");
 
-				if (puzzleString == null) {
+				if (positionalPuzzles.isEmpty()) {
 					System.out.println("No puzzle given with /bsa - ignored!");
 
 					return;
 				}
 
-				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
+				batchSolvePositionalPuzzles(positionalPuzzles, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, true);
 
 				return;
@@ -1082,9 +1057,9 @@ public class Main {
 				return;
 			}
 
-			if (puzzleString != null) {
+			if (!positionalPuzzles.isEmpty()) {
 				printIgnoredOptions("", argMap);
-				new Main().batchSolve(null, puzzleString, printSolution, printSolutionPath, printStatistics,
+				batchSolvePositionalPuzzles(positionalPuzzles, printSolution, printSolutionPath, printStatistics,
 						clipboardMode, outTypes, outFile, false);
 
 				return;
@@ -1097,6 +1072,34 @@ public class Main {
 			return;
 		}
 	// end of handleCliArgs
+
+	private static void batchSolvePositionalPuzzles(
+			List<String> positionalPuzzles,
+			boolean printSolution,
+			boolean printSolutionPath,
+			boolean printStatistics,
+			ClipboardMode clipboardMode,
+			Set<SolutionType> outTypes,
+			String outFile,
+			boolean findAllSteps) {
+
+		Main main = new Main();
+		if (positionalPuzzles.size() == 1) {
+			main.batchSolve(null, positionalPuzzles.get(0), printSolution, printSolutionPath, printStatistics,
+					clipboardMode, outTypes, outFile, findAllSteps);
+		} else {
+			main.batchSolveGrouped(
+					positionalPuzzles.toArray(new String[positionalPuzzles.size()]),
+					printSolution,
+					printSolutionPath,
+					printStatistics,
+					clipboardMode,
+					outTypes,
+					outFile,
+					findAllSteps
+			);
+		}
+	}
 
 	/**
 	 * Dynamically loads the Nimbus LaF and resets the default font to a larger
@@ -1229,7 +1232,7 @@ public class Main {
 
 	private static void printHelpScreen() {
 
-		System.out.println("Usage: java -Xmx512m -jar hodoku.jar [options] [puzzle]\r\n" + "\r\n" + "Options:\r\n"
+		System.out.println("Usage: java -Xmx512m -jar hodoku.jar [options] [puzzle ...]\r\n" + "\r\n" + "Options:\r\n"
 				+ "  /h, /?: print this help screen\r\n" + "  /f <file>: read options from file <file>\r\n"
 				+ "  /c <hcfg file | 'default'>: use <file> for this console run\r\n"
 				+ "      (current config of GUI program is not changed)\r\n"
@@ -1254,8 +1257,6 @@ public class Main {
 				+ "      0: easy; 1: medium; 2: hard; 3: unfair; 4: extreme\r\n"
 				+ "  /bs <file>: batch solve puzzles in <file> (output written to <file>.out.txt\r\n"
 				+ "       or a file given by /o)\r\n"
-				+ "  /bsg <p1|p2|...>: batch solve puzzles passed directly on the command line\r\n"
-				+ "       as a | separated list (default output: bsg.out.txt, or use /o)\r\n"
 				+ "  /bsaf <file>: batch process puzzles in <file> (output as in /bs);\r\n"
 				+ "       for each puzzle \"Find all Steps\" is executed\r\n"
 				+ "  /bsa: execute \"Find all Steps\" for [puzzle] (output written to\r\n"
@@ -1274,8 +1275,10 @@ public class Main {
 				+ "      written to the console\r\n" + "  /stdin: read options from stdin\r\n"
 				+ "  /test <file>: run regression tester against test cases in <file>\r\n"
 				+ "  /testf <file>: same as /test, but long running tests are ommitted\r\n" + "\r\n"
-				+ "Puzzle: If a puzzle is given it is solved as if it was read from a file with\r\n"
-				+ "      /bs; if a PM is given it must be delimited by \" or '");
+				+ "Puzzle: If one puzzle is given it is solved as if it was read from a file with\r\n"
+				+ "      /bs; if multiple positional puzzles are given they are batch solved\r\n"
+				+ "      directly from the command line (default output: batch.out.txt, or use /o).\r\n"
+				+ "      If a PM is given it must be delimited by \" or '");
 	}
 }
 
@@ -1763,7 +1766,7 @@ class BatchSolveThread extends Thread {
 				if (fileName != null) {
 					outFileName = fileName + ".out.txt";
 				} else if (puzzleStrings != null) {
-					outFileName = "bsg.out.txt";
+					outFileName = "batch.out.txt";
 				} else {
 					outFileName = fileName + ".out.txt";
 				}
