@@ -39,7 +39,14 @@ public class TeaVMMain {
     public static void main(String[] args) {
 
         TeaVMStdout.install();
-		runCli(args);
+        TeaVMStdout.clearCancellation();
+        try {
+            runCli(args);
+        } catch (TeaVMStdout.ExecutionCancelledException ex) {
+            // Listener-driven cancellation is a normal control-flow path.
+        } finally {
+            TeaVMStdout.clearCancellation();
+        }
 	}
 
 	static void runCli(String[] args) {

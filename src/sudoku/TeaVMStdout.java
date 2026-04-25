@@ -14,6 +14,7 @@ public final class TeaVMStdout {
 	}
 
 	private static OutputHandler handler;
+	private static boolean cancellationRequested;
 	private static boolean installed;
 
 	private TeaVMStdout() {}
@@ -33,6 +34,21 @@ public final class TeaVMStdout {
 		handler = null;
 	}
 
+	@JSExport
+	public static void requestCancellation() {
+		cancellationRequested = true;
+	}
+
+	@JSExport
+	public static void clearCancellation() {
+		cancellationRequested = false;
+	}
+
+	@JSExport
+	public static boolean isCancellationRequested() {
+		return cancellationRequested;
+	}
+
 	static void install() {
 		if (installed) {
 			return;
@@ -44,11 +60,22 @@ public final class TeaVMStdout {
 
 	private static void emit(String line, boolean isError) {
 		OutputHandler currentHandler = handler;
-		if (currentHandler == null) {
-			return;
+		if (currentHandler != null) {
+			currentHandler.accept(line, isError);
 		}
 
-		currentHandler.accept(line, isError);
+		if (cancellationRequested) {
+			throw new ExecutionCancelledException();
+		}
+	}
+
+	public static final class ExecutionCancelledException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
+		}
 	}
 
 	private static final class LineOutputStream extends OutputStream {

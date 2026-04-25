@@ -1,6 +1,6 @@
 {
   "name": "hodoku-core-js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Minimal HoDoKu TeaVM command wrapper for JavaScript.",
   "type": "module",
   "main": "./index.js",
@@ -16,8 +16,7 @@
     "Hodoku-teavm.cjs"
   ],
   "scripts": {
-    "prepack": "node ./scripts/prepack.mjs",
-    "parity-tool": "node ./scripts/parity-tool.mjs"
+    "prepack": "node ./scripts/prepack.mjs"
   },
   "keywords": [
     "sudoku",

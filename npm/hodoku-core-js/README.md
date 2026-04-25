@@ -4,19 +4,21 @@ Minimal JavaScript wrapper around HoDoKu's TeaVM build.
 
 ## Limitations
 
-- No thread safe
+- Pool slots isolate runtime state, but they do not guarantee CPU-parallel execution in every host.
 - Only default console profile is allowed
 - Slower than Java version (but faster than hodoku-difficulty-rating-ts).
 
 ## API
 
 ```js
-import { executeCommand } from 'hodoku-core-js';
+import { createRuntimePool } from 'hodoku-core-js';
 
-const helpLines = await executeCommand(['/h']);
+const pool = createRuntimePool();
+
+const helpLines = await pool.executeCommand(['/h']);
 console.log(helpLines);
 
-const batchLines = await executeCommand([
+const batchLines = await pool.executeCommand([
   '/o',
   'stdout',
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
@@ -24,18 +26,49 @@ const batchLines = await executeCommand([
 ]);
 console.log(batchLines);
 
-await executeCommand(['/h'], (line) => {
+await pool.executeCommand(['/h'], (line) => {
   console.log('HoDoKu:', line);
 });
+
+const firstPuzzleOnly = await pool.executeCommand(
+  [
+    '/o',
+    'stdout',
+    '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
+    '.....6....59.....82....8....45........3........6..3.54...325..6..................',
+  ],
+  (line) => {
+    if (line.includes('#1 ')) {
+      return false;
+    }
+  },
+);
+console.log(firstPuzzleOnly);
+
+const parallelPool = createRuntimePool({ size: 2 });
+const [helpA, helpB] = await Promise.all([
+  parallelPool.executeCommand(['/h']),
+  parallelPool.executeCommand(['/h']),
+]);
+console.log(helpA[0], helpB[0]);
+parallelPool.dispose();
+
+pool.dispose();
 ```
 
 Available exports:
 
-- `executeCommand(commandParts)`
+- `createRuntimePool({ size })`
 
-`executeCommand(commandParts)` sends the raw command parts directly to the TeaVM HoDoKu core and returns the emitted output as an array of lines.
+`createRuntimePool({ size })` creates a reusable pool of isolated TeaVM runtime instances. Each pool slot is locked while it is running a command.
 
-Pass an optional second argument to receive each emitted output line as it arrives.
+Call `pool.executeCommand(commandParts, onNewLineOrOptions)` to send raw command parts directly to the TeaVM HoDoKu core and receive the emitted output as an array of lines.
+
+Pass the optional second argument either as a listener function or as an options object.
+
+If the listener returns `false`, HoDoKu cancels the current command and `pool.executeCommand()` resolves with the lines collected so far.
+
+You can also pass `{ signal }` to request cancellation via an `AbortSignal`. Cancellation takes effect on the next emitted line.
 
 ## Accepted Puzzle Input
 
@@ -48,8 +81,6 @@ When a command includes puzzle text, HoDoKu parses the puzzle input using the sa
 If more than one positional puzzle is passed, HoDoKu applies the grouped inline batch-solve mode automatically.
 
 ## Packaging Workflow
-
-The npm package is prepared but not published automatically.
 
 From the repository root:
 

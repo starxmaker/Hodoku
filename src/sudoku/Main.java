@@ -218,6 +218,10 @@ public class Main {
 			Logger.getLogger(getClass().getName()).log(Level.SEVERE, "join interrupted...", ex);
 		}
 
+		if (thread.wasCancelled()) {
+			return;
+		}
+
 		int min = (int) (thread.getTicks() / 60000);
 		int sec = (int) (thread.getTicks() % 60000);
 		int ms = sec % 1000;
@@ -1566,6 +1570,7 @@ class BatchSolveThread extends Thread {
 	private String outFileName = null;
 	private boolean findAllSteps = false;
 	private boolean bruteForceTest = false;
+	private boolean cancelled = false;
 	private List<SolutionType> testTypes = null;
 	private StepStatistic[] stepStatistics;
 	private StepStatistic[] singleStepStatistics;
@@ -1746,6 +1751,7 @@ class BatchSolveThread extends Thread {
 	public void run() {
 
 		System.out.println("Starting batch solve...");
+		cancelled = false;
 		results = new int[Options.DEFAULT_DIFFICULTY_LEVELS.length];
 		bruteForceAnz = 0;
 		templateAnz = 0;
@@ -1791,7 +1797,7 @@ class BatchSolveThread extends Thread {
 			}
 
 			long outTicks = 0;
-			while (!isInterrupted() && ((inFile != null && 
+			while (!isInterrupted() && !TeaVMStdout.isCancellationRequested() && ((inFile != null && 
 					(line = inFile.readLine()) != null)	|| 
 					(puzzleStrings != null && nextPuzzleIndex < puzzleStrings.length) ||
 					(puzzleString != null))) {
@@ -2024,9 +2030,15 @@ class BatchSolveThread extends Thread {
 				}
 			}
 
-			if (printStatistic) {
+			if (TeaVMStdout.isCancellationRequested()) {
+				cancelled = true;
+			}
+
+			if (!cancelled && printStatistic) {
 				printStatistic(outFile, false);
 			}
+		} catch (TeaVMStdout.ExecutionCancelledException ex) {
+			cancelled = true;
 		} catch (Exception ex) {
 			System.out.println("Error in batch solve:");
 			ex.printStackTrace();
@@ -2044,7 +2056,9 @@ class BatchSolveThread extends Thread {
 			}
 		}
 
-		if (isInterrupted()) {
+		if (cancelled) {
+			// Suppress trailing status output so listener-driven cancellation stops cleanly.
+		} else if (isInterrupted()) {
 			System.out.println("Interrupted, shutting down...");
 		} else {
 			System.out.println("Done!");
@@ -2083,6 +2097,10 @@ class BatchSolveThread extends Thread {
 
 	public int getCount() {
 		return count;
+	}
+
+	public boolean wasCancelled() {
+		return cancelled;
 	}
 
 	public StepStatistic[] getStepStatistics() {
