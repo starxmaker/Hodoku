@@ -4,6 +4,9 @@ Minimal JavaScript wrapper around HoDoKu's TeaVM build.
 
 ## Limitations
 
+- No thread safe
+- Only default console profile is allowed
+- Slower than Java version (but faster than hodoku-difficulty-rating-ts).
 
 ## API
 
