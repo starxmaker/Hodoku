@@ -159,10 +159,8 @@
                             <targetType>JAVASCRIPT</targetType>
                             <targetDirectory>${teavm.js.output.dir}</targetDirectory>
                             <targetFileName>${teavm.js.module.name}</targetFileName>
-                            <optimizationLevel>SIMPLE</optimizationLevel>
-                            <debugInformationGenerated>false</debugInformationGenerated>
-                            <sourceMapsGenerated>false</sourceMapsGenerated>
-                            <minifying>false</minifying>
+                            <optimizationLevel>ADVANCED</optimizationLevel>
+                            <minifying>true</minifying>
                         </configuration>
                     </execution>
                 </executions>
