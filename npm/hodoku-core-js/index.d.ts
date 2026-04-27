@@ -20,4 +20,5 @@ export interface RuntimePool {
   dispose(): void;
 }
 
-export declare function createRuntimePool(options?: RuntimePoolOptions): RuntimePool;
+export declare function createRuntimePool(size: number): RuntimePool;
+export declare function createRuntime(): RuntimePool;
