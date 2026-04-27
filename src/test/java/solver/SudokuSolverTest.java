@@ -36,6 +36,7 @@ class SudokuSolverTest {
 
     @AfterEach
     void tearDown() {
+        solver.setMaxScore(Integer.MAX_VALUE);
         SudokuSolverFactory.giveBack(solver);
     }
 
@@ -298,6 +299,21 @@ class SudokuSolverTest {
         DifficultyLevel level = Options.getInstance().getDifficultyLevel(DifficultyType.EXTREME.ordinal());
         solver.setMaxLevel(level);
         assertEquals(level, solver.getMaxLevel());
+    }
+
+    @Test
+    void setMaxScore_andGetMaxScore_roundtrip() {
+        solver.setMaxScore(500);
+        assertEquals(500, solver.getMaxScore());
+    }
+
+    @Test
+    void solve_withMaxScoreLimit_abortsEarly() {
+        Sudoku2 sudoku = new Sudoku2();
+        sudoku.setSudoku(TestPuzzles.EASY_PUZZLE);
+        solver.setSudoku(sudoku);
+        solver.setMaxScore(20);
+        assertFalse(solver.solve(), "Solver should abort when score exceeds maxScore");
     }
 
     @Test

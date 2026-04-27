@@ -134,7 +134,8 @@ public class Main {
 			ClipboardMode cMode, 
 			Set<SolutionType> types, 
 			String outFile,
-			boolean findAllSteps) {
+			boolean findAllSteps,
+			int maxScore) {
 		
 		batchSolve(
 			fileName, 
@@ -148,7 +149,8 @@ public class Main {
 			outFile,
 			findAllSteps, 
 			false, 
-			null
+			null,
+			maxScore
 		);
 	}
 
@@ -163,7 +165,8 @@ public class Main {
 			String outFile, 
 			boolean findAllSteps,
 			boolean bruteForceTest, 
-			List<SolutionType> testTypes) {
+			List<SolutionType> testTypes,
+			int maxScore) {
 
 		batchSolve(
 			fileName,
@@ -177,7 +180,8 @@ public class Main {
 			outFile,
 			findAllSteps,
 			bruteForceTest,
-			testTypes
+			testTypes,
+			maxScore
 		);
 	}
 
@@ -193,7 +197,8 @@ public class Main {
 			String outFile, 
 			boolean findAllSteps,
 			boolean bruteForceTest, 
-			List<SolutionType> testTypes) {
+			List<SolutionType> testTypes,
+			int maxScore) {
 
 		BatchSolveThread thread = new BatchSolveThread(
 			fileName, 
@@ -207,7 +212,8 @@ public class Main {
 			outFile, 
 			findAllSteps, 
 			bruteForceTest, 
-			testTypes
+			testTypes,
+			maxScore
 		);
 
 		thread.start();
@@ -270,7 +276,8 @@ public class Main {
 			ClipboardMode cMode,
 			Set<SolutionType> types,
 			String outFile,
-			boolean findAllSteps) {
+			boolean findAllSteps,
+			int maxScore) {
 
 		batchSolve(
 			null,
@@ -284,7 +291,8 @@ public class Main {
 			outFile,
 			findAllSteps,
 			false,
-			null
+			null,
+			maxScore
 		);
 	}
 
@@ -746,10 +754,10 @@ public class Main {
 			args = null; // safe guard against refactoring error
 			for (int i = 0; i < options.size(); i++) {
 				String arg = options.get(i).trim().toLowerCase();
-				if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
-						|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
-						|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
-						|| arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
+			if (arg.equals("/bs") || arg.equals("/vg") || arg.equals("/sc") || arg.equals("/sl")
+					|| arg.equals("/so") || arg.equals("/o") || arg.equals("/bsaf")
+					|| arg.equals("/bts") || arg.equals("/bt") || arg.equals("/test") || arg.equals("/testf")
+					|| arg.equals("/ms") || arg.equals("/vf") || (arg.equals("/s") && (i + 1 < options.size())
 								&& options.get(i + 1).trim().charAt(0) != '/')) {
 					// args with parameters (only one parameter per arg permitted)
 					if (i + 1 >= options.size() || options.get(i + 1).trim().charAt(0) == '/') {
@@ -920,6 +928,17 @@ public class Main {
 				argMap.remove("/vst");
 			}
 
+			int maxScore = -1;
+			if (argMap.containsKey("/ms")) {
+				try {
+					maxScore = Integer.parseInt(argMap.get("/ms"));
+				} catch (NumberFormatException ex) {
+					System.out.println("Invalid argument for option /ms: " + argMap.get("/ms") + " - option ignored!");
+					return;
+				}
+				argMap.remove("/ms");
+			}
+
 			if (argMap.containsKey("/vf")) {
 
 				String arg = argMap.get("/vf");
@@ -995,7 +1014,7 @@ public class Main {
 				printIgnoredOptions("/bs", argMap);
 				String fileName = argMap.get("/bs");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
-						outTypes, outFile, false);
+						outTypes, outFile, false, maxScore);
 
 				return;
 			}
@@ -1004,7 +1023,7 @@ public class Main {
 				printIgnoredOptions("/bsaf", argMap);
 				String fileName = argMap.get("/bsaf");
 				new Main().batchSolve(fileName, null, printSolution, printSolutionPath, printStatistics, clipboardMode,
-						outTypes, outFile, true);
+						outTypes, outFile, true, maxScore);
 
 				return;
 			}
@@ -1021,7 +1040,7 @@ public class Main {
 				}
 
 				batchSolvePositionalPuzzles(positionalPuzzles, printSolution, printSolutionPath, printStatistics,
-						clipboardMode, outTypes, outFile, true);
+						clipboardMode, outTypes, outFile, true, maxScore);
 
 				return;
 			}
@@ -1056,7 +1075,7 @@ public class Main {
 				}
 
 				new Main().batchSolve(fileName, null, false, false, true, clipboardMode, outTypes, outFile, false, true,
-						testTypes);
+						testTypes, maxScore);
 
 				return;
 			}
@@ -1064,7 +1083,7 @@ public class Main {
 			if (!positionalPuzzles.isEmpty()) {
 				printIgnoredOptions("", argMap);
 				batchSolvePositionalPuzzles(positionalPuzzles, printSolution, printSolutionPath, printStatistics,
-						clipboardMode, outTypes, outFile, false);
+						clipboardMode, outTypes, outFile, false, maxScore);
 
 				return;
 			}
@@ -1085,12 +1104,13 @@ public class Main {
 			ClipboardMode clipboardMode,
 			Set<SolutionType> outTypes,
 			String outFile,
-			boolean findAllSteps) {
+			boolean findAllSteps,
+			int maxScore) {
 
 		Main main = new Main();
 		if (positionalPuzzles.size() == 1) {
 			main.batchSolve(null, positionalPuzzles.get(0), printSolution, printSolutionPath, printStatistics,
-					clipboardMode, outTypes, outFile, findAllSteps);
+					clipboardMode, outTypes, outFile, findAllSteps, maxScore);
 		} else {
 			main.batchSolveGrouped(
 					positionalPuzzles.toArray(new String[positionalPuzzles.size()]),
@@ -1100,7 +1120,8 @@ public class Main {
 					clipboardMode,
 					outTypes,
 					outFile,
-					findAllSteps
+					findAllSteps,
+					maxScore
 			);
 		}
 	}
@@ -1271,6 +1292,7 @@ public class Main {
 				+ "  /vs: print solution in output file (only valid with /bs)\r\n"
 				+ "  /vp: print complete solution for each puzzle (only valid with /bs)\r\n"
 				+ "  /vst: print statistics (only valid with /bs)\r\n"
+				+ "  /ms <score>: give up puzzle rating if score exceeds <score> (only valid with /bs)\r\n"
 				+ "  /vf <0|1|2>: set fish output format (default, numbers, cells)\r\n"
 				+ "  /vg [l|c|s:]<step>[,<step>...]: print pm before every <step> in the solution\r\n"
 				+ "      (only valid with /bs and /vp)\r\n" + "      l: print library format\r\n"
@@ -1571,6 +1593,7 @@ class BatchSolveThread extends Thread {
 	private boolean findAllSteps = false;
 	private boolean bruteForceTest = false;
 	private boolean cancelled = false;
+	private int maxScore = -1;
 	private List<SolutionType> testTypes = null;
 	private StepStatistic[] stepStatistics;
 	private StepStatistic[] singleStepStatistics;
@@ -1588,7 +1611,8 @@ class BatchSolveThread extends Thread {
 			String ofn, 
 			boolean fas, 
 			boolean bft, 
-			List<SolutionType> tt) {
+			List<SolutionType> tt,
+			int maxScore) {
 		
 		fileName = fn;
 		puzzleString = pStr;
@@ -1607,6 +1631,7 @@ class BatchSolveThread extends Thread {
 		findAllSteps = fas;
 		bruteForceTest = bft;
 		testTypes = tt;
+		this.maxScore = maxScore;
 		
 		if (bruteForceTest) {
 			findAllStepsInstance = new FindAllSteps();
@@ -1845,9 +1870,16 @@ class BatchSolveThread extends Thread {
 					// only for now: check the solution
 					generator.validSolution(sudoku);
 					solver.setSudoku(sudoku);
+					if (maxScore >= 0) {
+						solver.setMaxScore(maxScore);
+					}
 					solver.solve();
-//                    System.out.println("solved: " + sudoku.getSudoku(ClipboardMode.VALUES_ONLY));
 					steps = solver.getSteps();
+					if (!sudoku.isSolved() && !unsolved) {
+						unsolved = true;
+						givenUp = true;
+						givenUpAnz++;
+					}
 					for (int i = 0; i < steps.size(); i++) {
 						
 //                        System.out.println("      " + steps.get(i).toString(2));
@@ -1876,12 +1908,14 @@ class BatchSolveThread extends Thread {
 					}
 
 					// only for now: check the solution!
-					for (int i = 0; i < sudoku.getValues().length; i++) {
-						if (sudoku.getValue(i) != sudoku.getSolution(i)) {
-							System.out.println("Invalid solution: ");
-							System.out.println("   Sudoku: " + line);
-							System.out.println("   Solution:      " + Arrays.toString(sudoku.getValues()));
-							System.out.println("   True Solution: " + Arrays.toString(sudoku.getSolution()));
+					if (sudoku.isSolved()) {
+						for (int i = 0; i < sudoku.getValues().length; i++) {
+							if (sudoku.getValue(i) != sudoku.getSolution(i)) {
+								System.out.println("Invalid solution: ");
+								System.out.println("   Sudoku: " + line);
+								System.out.println("   Solution:      " + Arrays.toString(sudoku.getValues()));
+								System.out.println("   True Solution: " + Arrays.toString(sudoku.getSolution()));
+							}
 						}
 					}
 //                    System.out.println("solved!");

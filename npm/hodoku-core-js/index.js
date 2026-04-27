@@ -199,8 +199,7 @@ class RuntimeSlot {
 }
 
 class RuntimePool {
-  constructor(options = {}) {
-    const { size = 1 } = options;
+  constructor(size) {
     if (!Number.isInteger(size) || size < 1) {
       throw new RangeError('Runtime pool size must be a positive integer');
     }
@@ -336,6 +335,10 @@ function normalizeCommandParts(commandParts) {
   return commandParts.map((part) => normalizeCommandPart(part));
 }
 
-export function createRuntimePool(options) {
-  return new RuntimePool(options);
+export function createRuntimePool(size) {
+  return new RuntimePool(size);
+}
+
+export function createRuntime() {
+  return createRuntimePool(1);
 }

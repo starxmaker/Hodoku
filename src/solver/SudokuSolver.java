@@ -49,6 +49,7 @@ public class SudokuSolver {
 	private DifficultyLevel level = Options.getInstance().getDifficultyLevel(DifficultyType.EXTREME.ordinal());
 	private DifficultyLevel maxLevel = Options.getInstance().getDifficultyLevel(DifficultyType.EXTREME.ordinal());
 	private int score;
+	private int maxScore = Integer.MAX_VALUE;
 	private int[] anzSteps = new int[Options.getInstance().solverSteps.length];
 	private int[] anzStepsProgress = new int[Options.getInstance().solverSteps.length];
 	private long[] stepsNanoTime = new long[Options.getInstance().solverSteps.length];
@@ -238,7 +239,7 @@ public class SudokuSolver {
 			level = Options.getInstance().getDifficultyLevel(level.getOrdinal() + 1);
 		}
 		// Puzzle zu schwer -> ungültig
-		if (level.getOrdinal() > maxLevel.getOrdinal() && acceptAnyway == false) {
+		if ((level.getOrdinal() > maxLevel.getOrdinal() || score >= maxScore) && acceptAnyway == false) {
 //            System.out.println("        rejected: to difficult");
 			return false;
 		}
@@ -477,7 +478,7 @@ public class SudokuSolver {
 				}
 				// Wenn das Puzzle zu schwer ist, gleich abbrechen
 				if (!acceptAnyway) {
-					if (level.getOrdinal() > maxLevel.getOrdinal() || score >= maxLevel.getMaxScore()) {
+					if (level.getOrdinal() > maxLevel.getOrdinal() || score >= maxLevel.getMaxScore() || score >= maxScore) {
 						// zu schwer!
 						return null;
 					}
@@ -583,6 +584,14 @@ public class SudokuSolver {
 
 	public void setMaxLevel(DifficultyLevel maxLevel) {
 		this.maxLevel = maxLevel;
+	}
+
+	public int getMaxScore() {
+		return maxScore;
+	}
+
+	public void setMaxScore(int maxScore) {
+		this.maxScore = maxScore;
 	}
 
 	public void setScore(int score) {

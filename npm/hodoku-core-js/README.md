@@ -2,23 +2,36 @@
 
 Minimal JavaScript wrapper around HoDoKu's TeaVM build.
 
-## Limitations
+Slower than Java version (but faster than hodoku-difficulty-rating-ts). Use it if you really need to use it in a node only environment or in the browser.
 
-- Pool slots isolate runtime state, but they do not guarantee CPU-parallel execution in every host.
-- Only default console profile is allowed
-- Slower than Java version (but faster than hodoku-difficulty-rating-ts).
+Install with: 
+
+```bash
+npm install hodoku-core-js
+```
+
+## Additional modifications
+
+- Code changes to make it compatible with TeaVM
+  - Only default console profile is allowed (there is an issue loading XML config)
+- Sudoku input now is vararg. It means you can pass more than one sudoku to be rated (instead of having to use a file for that with /bs)
+- Console printing is captured using a specific listener instead of console.log
+- Ability to cancel execution via command listener
+- `/ms (number)`, to given up on a sudoku rating after a specific score has been surpassed.
 
 ## API
 
 ```js
-import { createRuntimePool } from 'hodoku-core-js';
+import { createRuntime, createRuntimePool } from 'hodoku-core-js';
 
-const pool = createRuntimePool();
+const runtime = createRuntime(); // or createRuntimePool(10) for multi runtimes
 
-const helpLines = await pool.executeCommand(['/h']);
+// show commands
+const helpLines = await runtime.executeCommand(['/h']);
 console.log(helpLines);
 
-const batchLines = await pool.executeCommand([
+// Multi sudoku rating
+const batchLines = await runtime.executeCommand([
   '/o',
   'stdout',
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
@@ -26,26 +39,8 @@ const batchLines = await pool.executeCommand([
 ]);
 console.log(batchLines);
 
-await pool.executeCommand(['/h'], (line) => {
-  console.log('HoDoKu:', line);
-});
-
-const firstPuzzleOnly = await pool.executeCommand(
-  [
-    '/o',
-    'stdout',
-    '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
-    '.....6....59.....82....8....45........3........6..3.54...325..6..................',
-  ],
-  (line) => {
-    if (line.includes('#1 ')) {
-      return false;
-    }
-  },
-);
-console.log(firstPuzzleOnly);
-
-const parallelPool = createRuntimePool({ size: 2 });
+// multi runtime
+const parallelPool = createRuntimePool(2);
 const [helpA, helpB] = await Promise.all([
   parallelPool.executeCommand(['/h']),
   parallelPool.executeCommand(['/h']),
@@ -53,22 +48,27 @@ const [helpA, helpB] = await Promise.all([
 console.log(helpA[0], helpB[0]);
 parallelPool.dispose();
 
-pool.dispose();
+// give up at a given score
+const expertPuzzle = [ '.....5..44.17....2.2.1.4.8....36......7....5.......8..2....3.473..512....8.......']
+await runtime.executeCommand(['/o', 'stdout', '/ms', '1000', ...expertPuzzle], (line) => console.log(line))
+// output: .....5..44.17....2.2.1.4.8....36......7....5.......8..2....3.473..512....8....... #1 Extreme (1478) gu
+
+// cancel execution at a given time
+await runtime.executeCommand(['/o', 'stdout', '/ms', '1000', ...expertPuzzle], (line) => {
+  if line === "specific line" return false
+})
+// output ["whatever", "lines", "before", "specific line"]
+// You can also pass `{ signal }` to request cancellation via an `AbortSignal`. 
+// Cancellation takes effect on the next emitted line.
+
+// cleaning
+runtime.dispose();
 ```
 
 Available exports:
 
-- `createRuntimePool({ size })`
-
-`createRuntimePool({ size })` creates a reusable pool of isolated TeaVM runtime instances. Each pool slot is locked while it is running a command.
-
-Call `pool.executeCommand(commandParts, onNewLineOrOptions)` to send raw command parts directly to the TeaVM HoDoKu core and receive the emitted output as an array of lines.
-
-Pass the optional second argument either as a listener function or as an options object.
-
-If the listener returns `false`, HoDoKu cancels the current command and `pool.executeCommand()` resolves with the lines collected so far.
-
-You can also pass `{ signal }` to request cancellation via an `AbortSignal`. Cancellation takes effect on the next emitted line.
+- `createRuntime()`: Single runtime.
+- `createRuntimePool(size)`: creates a reusable pool of isolated TeaVM runtime instances. Each pool slot is locked while it is running a command.
 
 ## Accepted Puzzle Input
 
