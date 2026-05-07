@@ -1,4 +1,5 @@
 const RUNTIME_BUNDLE_URL = new URL('./Hodoku-teavm.cjs', import.meta.url);
+const HODOKU_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard', 'Unfair', 'Extreme']);
 
 let runtimeSourcePromise;
 
@@ -100,6 +101,12 @@ function normalizeExecuteOptions(onNewLineOrOptions) {
     throw new TypeError('includeSolution must be a boolean');
   }
 
+  validateAbortSignal(signal);
+
+  return { onNewLine, onRating, includeSolution, signal };
+}
+
+function validateAbortSignal(signal) {
   if (
     signal !== undefined
     && (signal === null
@@ -110,8 +117,6 @@ function normalizeExecuteOptions(onNewLineOrOptions) {
   ) {
     throw new TypeError('signal must be an AbortSignal');
   }
-
-  return { onNewLine, onRating, includeSolution, signal };
 }
 
 function normalizePuzzles(puzzles) {
@@ -138,6 +143,35 @@ function normalizeMaxScore(maxScore) {
   return maxScore;
 }
 
+function normalizeOptionalNonNegativeInteger(value, name) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Number.isInteger(value) || value < 0) {
+    throw new TypeError(`${name} must be a non-negative integer`);
+  }
+
+  return value;
+}
+
+function normalizeDifficulty(difficulty) {
+  if (difficulty === undefined) {
+    return undefined;
+  }
+
+  if (typeof difficulty !== 'string') {
+    throw new TypeError('difficulty must be a HoDoKu difficulty string');
+  }
+
+  const normalizedDifficulty = difficulty.trim();
+  if (!HODOKU_DIFFICULTIES.has(normalizedDifficulty)) {
+    throw new TypeError('difficulty must be one of Easy, Medium, Hard, Unfair, Extreme');
+  }
+
+  return normalizedDifficulty;
+}
+
 function normalizeRateOptions(options) {
   if (options === null || typeof options !== 'object' || Array.isArray(options)) {
     throw new TypeError('rateSudokus options must be an object');
@@ -154,22 +188,63 @@ function normalizeRateOptions(options) {
     throw new TypeError('includeSolution must be a boolean');
   }
 
-  if (
-    signal !== undefined
-    && (signal === null
-      || typeof signal !== 'object'
-      || typeof signal.aborted !== 'boolean'
-      || typeof signal.addEventListener !== 'function'
-      || typeof signal.removeEventListener !== 'function')
-  ) {
-    throw new TypeError('signal must be an AbortSignal');
-  }
+  validateAbortSignal(signal);
 
   return {
     puzzles: normalizePuzzles(puzzles),
     includeSolution,
     maxScore: normalizeMaxScore(maxScore),
     signal,
+  };
+}
+
+function normalizeGenerateOptions(options) {
+  if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('generateSudokus options must be an object');
+  }
+
+  const {
+    quantity,
+    minScore,
+    maxScore,
+    difficulty,
+    signal,
+  } = options;
+
+  if (quantity !== undefined && (!Number.isInteger(quantity) || quantity < 1)) {
+    throw new TypeError('quantity must be a positive integer');
+  }
+
+  validateAbortSignal(signal);
+
+  const normalizedMinScore = normalizeOptionalNonNegativeInteger(minScore, 'minScore');
+  const normalizedMaxScore = normalizeOptionalNonNegativeInteger(maxScore, 'maxScore');
+  if (
+    normalizedMinScore !== undefined
+    && normalizedMaxScore !== undefined
+    && normalizedMinScore > normalizedMaxScore
+  ) {
+    throw new TypeError('minScore must be less than or equal to maxScore');
+  }
+
+  return {
+    quantity,
+    minScore: normalizedMinScore,
+    maxScore: normalizedMaxScore,
+    difficulty: normalizeDifficulty(difficulty),
+    signal,
+  };
+}
+
+function normalizeGenerateCall(options, onGenerated) {
+  const normalizedOptions = normalizeGenerateOptions(options);
+  if (onGenerated !== undefined && typeof onGenerated !== 'function') {
+    throw new TypeError('onGenerated must be a function');
+  }
+
+  return {
+    ...normalizedOptions,
+    onGenerated,
   };
 }
 
@@ -336,6 +411,47 @@ function createRatingCapture(runtime, options, controls) {
   };
 }
 
+function createGenerationCapture(runtime, onGenerated, controls) {
+  const runtimeGenerationStream = runtime?.TeaVMGenerationStream;
+  if (typeof runtimeGenerationStream?.setHandler !== 'function') {
+    throw new Error('TeaVMGenerationStream.setHandler is unavailable in this bundle. Rebuild HoDoKu and refresh Hodoku-teavm.cjs.');
+  }
+
+  const originalHandler = typeof runtimeGenerationStream.getHandler === 'function'
+    ? runtimeGenerationStream.getHandler()
+    : null;
+
+  runtimeGenerationStream.setHandler((puzzle, difficulty, score, givenUp, bruteForced, unsolvable, solution) => {
+    const generatedSudoku = {
+      puzzle: typeof puzzle === 'string' ? puzzle : String(puzzle),
+      difficulty: typeof difficulty === 'string' ? difficulty : String(difficulty),
+      score: Number(score),
+      givenUp: Boolean(givenUp),
+      bruteForced: Boolean(bruteForced),
+      unsolvable: Boolean(unsolvable),
+    };
+
+    if (typeof solution === 'string' && solution.length > 0) {
+      generatedSudoku.solution = solution;
+    }
+
+    const result = onGenerated(generatedSudoku, controls);
+    if (result === false) {
+      controls.cancel();
+    }
+  });
+
+  return {
+    restore() {
+      if (originalHandler == null) {
+        runtimeGenerationStream.clearHandler();
+      } else {
+        runtimeGenerationStream.setHandler(originalHandler);
+      }
+    },
+  };
+}
+
 async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewLineOrOptions) {
   const options = normalizeExecuteOptions(onNewLineOrOptions);
   if (options.signal?.aborted) {
@@ -395,6 +511,49 @@ async function executeCommandRatingsWithRuntime(runtime, normalizedCommandParts,
   return ratings;
 }
 
+async function executeGenerateWithRuntime(runtime, options) {
+  if (options.signal?.aborted) {
+    return [];
+  }
+
+  const generatedSudokus = [];
+  const capture = createOutputCapture(runtime, { signal: options.signal });
+  const generationCapture = createGenerationCapture(runtime, (generatedSudoku, controls) => {
+    generatedSudokus.push(generatedSudoku);
+
+    if (options.onGenerated) {
+      return options.onGenerated(generatedSudoku, controls);
+    }
+
+    return undefined;
+  }, capture.controls);
+
+  try {
+    const runtimeGenerator = runtime?.TeaVMGenerator;
+    if (typeof runtimeGenerator?.generateSudokus !== 'function') {
+      throw new Error('TeaVMGenerator.generateSudokus is unavailable in this bundle. Rebuild HoDoKu and refresh Hodoku-teavm.cjs.');
+    }
+
+    try {
+      runtimeGenerator.generateSudokus(
+        options.quantity ?? -1,
+        options.difficulty ?? null,
+        options.minScore ?? -1,
+        options.maxScore ?? -1,
+      );
+    } catch (error) {
+      if (!capture.wasCancelled()) {
+        throw error;
+      }
+    }
+  } finally {
+    generationCapture.restore();
+    capture.restore();
+  }
+
+  return generatedSudokus;
+}
+
 function normalizeCommandPart(commandPart) {
   if (typeof commandPart !== 'string') {
     throw new TypeError('command parts must be strings');
@@ -420,6 +579,20 @@ async function withRuntime(action) {
   const runtimeSource = await loadRuntimeSource();
   const runtime = instantiateRuntime(runtimeSource);
   return action(runtime);
+}
+
+export async function generateSudokus(options, onGenerated) {
+  const normalizedCall = normalizeGenerateCall(options, onGenerated);
+  return withRuntime((runtime) => executeGenerateWithRuntime(runtime, normalizedCall));
+}
+
+export async function generateSudoku(options) {
+  const newOptions = {
+    ...options,
+    quantity: 1,
+  }
+  const sudokus = await generateSudokus(newOptions);
+  return sudokus.length > 0 ? sudokus[0] : null;
 }
 
 export async function rateSudokus(options, onRating) {

@@ -15,7 +15,7 @@ npm install hodoku-core-js
 ## API
 
 ```js
-import { rateSudokus } from 'hodoku-core-js';
+import { generateSudokus, rateSudokus } from 'hodoku-core-js';
 
 const puzzles = [
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
@@ -39,13 +39,28 @@ const withSolution = await rateSudokus({
   maxScore: 1000,
 });
 console.log(withSolution[0].solution);
+
+const generated = await generateSudokus(
+  { quantity: 2, difficulty: 'Easy', maxScore: 800 },
+  (sudoku, control) => {
+    console.log(sudoku);
+
+    if (sudoku.score > 600) {
+      control.cancel();
+    }
+  },
+);
+console.log(generated[0].solution);
 ```
 
 Available exports:
 
+- `generateSudokus(options, onGenerated?)`: generates `options.quantity` puzzles when provided, or keeps generating until cancellation when `quantity` is omitted. It optionally filters by `difficulty`, `minScore`, and `maxScore`, streams each `GeneratedSudoku`, and resolves with the collected results.
 - `rateSudokus(options, onRating?)`: rates `options.puzzles`, optionally calls `onRating` for each emitted rating, and resolves with the collected ratings.
 
 Each emitted rating includes `givenUp`, `bruteForced`, and `unsolvable` booleans in addition to `puzzle`, `puzzleNumber`, `difficulty`, `score`, and optional `solution`.
+
+Each generated puzzle includes the same difficulty metadata plus the generated puzzle string and solved grid in `solution`.
 
 Each call creates a fresh isolated TeaVM runtime. That keeps handler state local to the call and avoids cross-request interference when callers run ratings concurrently.
 

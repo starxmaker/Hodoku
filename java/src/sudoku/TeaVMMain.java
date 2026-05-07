@@ -28,7 +28,7 @@ import org.teavm.jso.JSExportClasses;
  * APIs unsupported by TeaVM such as desktop logging/config bootstrapping and
  * XML-backed option loading.</p>
  */
-@JSExportClasses({TeaVMStdout.class, TeaVMRatingStream.class})
+@JSExportClasses({TeaVMStdout.class, TeaVMRatingStream.class, TeaVMGenerationStream.class, TeaVMGenerator.class})
 public class TeaVMMain {
 
     /**

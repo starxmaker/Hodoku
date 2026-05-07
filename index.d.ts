@@ -5,16 +5,45 @@ export interface RatingControl {
   readonly cancelled: boolean;
 }
 
-export interface SudokuRating {
-  puzzle: string;
-  puzzleNumber: number;
+export interface BaseSudokuRating {
   difficulty: HodokuDifficulty;
   score: number;
   givenUp: boolean;
   bruteForced: boolean;
   unsolvable: boolean;
+}
+
+export interface BasePuzzle {
+  puzzle: string;
   solution?: string;
 }
+
+export interface SudokuRating extends BaseSudokuRating, BasePuzzle {
+  puzzleNumber: number;
+}
+  
+export interface GeneratedSudoku extends BaseSudokuRating, BasePuzzle {
+}
+
+export interface GenerateSudokuOptions {
+  minScore?: number;
+  maxScore?: number;
+  difficulty?: HodokuDifficulty;
+  signal?: AbortSignal;
+}
+
+export interface GenerateSudokusOptions extends GenerateSudokuOptions {
+  quantity?: number;
+}
+
+export declare function generateSudokus(
+  options: GenerateSudokusOptions,
+  onGenerated?: (generatedSudoku: GeneratedSudoku, control: RatingControl) => boolean | void,
+): Promise<GeneratedSudoku[]>;
+
+export declare function generateSudoku(
+  options: GenerateSudokuOptions
+): Promise<GeneratedSudoku | null>;
 
 export interface BaseRateSudokuOptions {
   includeSolution?: boolean;
