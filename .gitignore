@@ -1,13 +1,13 @@
-bin/
-lib/
-.settings/
-legacy/
-jacoco.exec
-reports/
-target
+java/bin/
+java/lib/
+java/.settings/
+java/legacy/
+java/jacoco.exec
+java/reports/
+java/target/
 
 # Generated npm package artifacts
-npm/hodoku-core-js/Hodoku-teavm.cjs
-npm/hodoku-core-js/Hodoku-teavm.js
-npm/hodoku-core-js/*.tgz
-npm/hodoku-core-js/node_modules/
+Hodoku-teavm.cjs
+Hodoku-teavm.js
+*.tgz
+node_modules/
