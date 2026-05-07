@@ -1,6 +1,6 @@
 {
   "name": "hodoku-core-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Minimal HoDoKu TeaVM command wrapper for JavaScript.",
   "type": "module",
   "main": "./index.js",

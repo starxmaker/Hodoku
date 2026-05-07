@@ -1,3 +1,5 @@
+export type HodokuDifficulty = 'Easy' | 'Medium' | 'Hard' | 'Unfair' | 'Extreme';
+
 export interface RatingControl {
   cancel(): void;
   readonly cancelled: boolean;
@@ -6,7 +8,7 @@ export interface RatingControl {
 export interface SudokuRating {
   puzzle: string;
   puzzleNumber: number;
-  difficulty: string;
+  difficulty: HodokuDifficulty;
   score: number;
   givenUp: boolean;
   bruteForced: boolean;
