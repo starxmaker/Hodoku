@@ -1,6 +1,6 @@
 {
   "name": "hodoku-core-js",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "description": "Minimal HoDoKu TeaVM command wrapper for JavaScript.",
   "type": "module",
   "main": "./index.js",
@@ -16,8 +16,8 @@
     "Hodoku-teavm.cjs"
   ],
   "scripts": {
-    "prepack": "node ./scripts/prepack.mjs && npm run parity-test",
-    "parity-test": "node ./scripts/parity-test.mjs"
+    "prepack": "node ./scripts/prepack.mjs && npm test",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
   },
   "keywords": [
     "sudoku",
@@ -25,6 +25,9 @@
     "cli",
     "teavm"
   ],
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
   "license": "GPL-3.0-or-later",
   "sideEffects": false
 }

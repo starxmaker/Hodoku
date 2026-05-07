@@ -1839,6 +1839,7 @@ class BatchSolveThread extends Thread {
 				if (line.length() == 0) {
 					continue;
 				}
+				String sourcePuzzle = line;
 				
 //                System.out.println(line);
 				sudoku.setSudoku(line);
@@ -1857,6 +1858,7 @@ class BatchSolveThread extends Thread {
 				boolean needsGuessing = false;
 				boolean needsTemplates = false;
 				boolean givenUp = false;
+				boolean unsolvable = false;
 				boolean unsolved = false;
 				List<SolutionStep> steps = null;
 
@@ -1868,7 +1870,7 @@ class BatchSolveThread extends Thread {
 					// System.out.println("fas: " + steps.size());
 				} else {
 					// only for now: check the solution
-					generator.validSolution(sudoku);
+					unsolvable = generator.getNumberOfSolutions(sudoku, 2) == 0;
 					solver.setSudoku(sudoku);
 					if (maxScore >= 0) {
 						solver.setMaxScore(maxScore);
@@ -1943,6 +1945,8 @@ class BatchSolveThread extends Thread {
 
 				String out = line + " #" + count;
 				if (!findAllSteps) {
+					TeaVMRatingStream.emit(sourcePuzzle, count, solver.getLevel().getName(), solver.getScore(), givenUp,
+							needsGuessing, unsolvable, sudoku);
 					out += " " + solver.getLevel().getName() + " (" + solver.getScore() + ")" + guess + template
 							+ giveUp;
 					results[solver.getLevel().getOrdinal()]++;

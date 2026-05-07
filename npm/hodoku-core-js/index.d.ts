@@ -1,24 +1,37 @@
-export interface ExecuteCommandControl {
+export interface RatingControl {
   cancel(): void;
   readonly cancelled: boolean;
 }
 
-export interface ExecuteCommandOptions {
-  onNewLine?: (line: string, control: ExecuteCommandControl) => boolean | void;
+export interface SudokuRating {
+  puzzle: string;
+  puzzleNumber: number;
+  difficulty: string;
+  score: number;
+  givenUp: boolean;
+  bruteForced: boolean;
+  unsolvable: boolean;
+  solution?: string;
+}
+
+export interface BaseRateSudokuOptions {
+  includeSolution?: boolean;
+  maxScore?: number;
   signal?: AbortSignal;
 }
-
-export interface RuntimePoolOptions {
-  size?: number;
+export interface RateSudokusOptions extends BaseRateSudokuOptions {
+  puzzles: string[];
 }
 
-export interface RuntimePool {
-  executeCommand(
-    commandParts: string[],
-    onNewLineOrOptions?: ((line: string, control: ExecuteCommandControl) => boolean | void) | ExecuteCommandOptions,
-  ): Promise<string[]>;
-  dispose(): void;
+export interface RateSudokuOptions extends BaseRateSudokuOptions {
+  puzzle: string;
 }
 
-export declare function createRuntimePool(size: number): RuntimePool;
-export declare function createRuntime(): RuntimePool;
+export declare function rateSudoku(
+  options: RateSudokuOptions
+): Promise<SudokuRating | null>;
+
+export declare function rateSudokus(
+  options: RateSudokusOptions,
+  onRating?: (rating: SudokuRating, control: RatingControl) => boolean | void,
+): Promise<SudokuRating[]>;

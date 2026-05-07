@@ -116,7 +116,9 @@ public class SudokuGenerator {
 		}
 		
 		ticks = System.currentTimeMillis() - ticks;
-		Logger.getLogger(getClass().getName()).log(Level.FINE, "validSolution() {0}ms", ticks);
+		if (!"TeaVM".equalsIgnoreCase(System.getProperty("os.name", ""))) {
+			Logger.getLogger(getClass().getName()).log(Level.FINE, "validSolution() {0}ms", ticks);
+		}
 		
 		return solutionCount;
 	}

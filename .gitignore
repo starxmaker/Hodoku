@@ -10,3 +10,4 @@ target
 npm/hodoku-core-js/Hodoku-teavm.cjs
 npm/hodoku-core-js/Hodoku-teavm.js
 npm/hodoku-core-js/*.tgz
+npm/hodoku-core-js/node_modules/

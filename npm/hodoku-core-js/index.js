@@ -82,9 +82,22 @@ function normalizeExecuteOptions(onNewLineOrOptions) {
     throw new TypeError('executeCommand options must be a function or an object');
   }
 
-  const { onNewLine, signal } = onNewLineOrOptions;
+  const {
+    onNewLine,
+    onRating,
+    includeSolution = false,
+    signal,
+  } = onNewLineOrOptions;
   if (onNewLine !== undefined && typeof onNewLine !== 'function') {
     throw new TypeError('onNewLine must be a function');
+  }
+
+  if (onRating !== undefined && typeof onRating !== 'function') {
+    throw new TypeError('onRating must be a function');
+  }
+
+  if (typeof includeSolution !== 'boolean') {
+    throw new TypeError('includeSolution must be a boolean');
   }
 
   if (
@@ -98,7 +111,88 @@ function normalizeExecuteOptions(onNewLineOrOptions) {
     throw new TypeError('signal must be an AbortSignal');
   }
 
-  return { onNewLine, signal };
+  return { onNewLine, onRating, includeSolution, signal };
+}
+
+function normalizePuzzles(puzzles) {
+  if (!Array.isArray(puzzles)) {
+    throw new TypeError('puzzles must be an array of strings');
+  }
+
+  if (puzzles.length === 0) {
+    throw new TypeError('puzzles must not be empty');
+  }
+
+  return puzzles.map((puzzle) => normalizeCommandPart(puzzle));
+}
+
+function normalizeMaxScore(maxScore) {
+  if (maxScore === undefined) {
+    return undefined;
+  }
+
+  if (!Number.isInteger(maxScore) || maxScore < 0) {
+    throw new TypeError('maxScore must be a non-negative integer');
+  }
+
+  return maxScore;
+}
+
+function normalizeRateOptions(options) {
+  if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('rateSudokus options must be an object');
+  }
+
+  const {
+    puzzles,
+    includeSolution = false,
+    maxScore,
+    signal,
+  } = options;
+
+  if (typeof includeSolution !== 'boolean') {
+    throw new TypeError('includeSolution must be a boolean');
+  }
+
+  if (
+    signal !== undefined
+    && (signal === null
+      || typeof signal !== 'object'
+      || typeof signal.aborted !== 'boolean'
+      || typeof signal.addEventListener !== 'function'
+      || typeof signal.removeEventListener !== 'function')
+  ) {
+    throw new TypeError('signal must be an AbortSignal');
+  }
+
+  return {
+    puzzles: normalizePuzzles(puzzles),
+    includeSolution,
+    maxScore: normalizeMaxScore(maxScore),
+    signal,
+  };
+}
+
+function normalizeRateCall(options, onRating) {
+  const normalizedOptions = normalizeRateOptions(options);
+  if (onRating !== undefined && typeof onRating !== 'function') {
+    throw new TypeError('onRating must be a function');
+  }
+
+  return {
+    ...normalizedOptions,
+    onRating,
+  };
+}
+
+function buildRatingCommandParts(options) {
+  const commandParts = ['/o', 'stdout'];
+
+  if (options.maxScore !== undefined) {
+    commandParts.push('/ms', String(options.maxScore));
+  }
+
+  return commandParts.concat(options.puzzles);
 }
 
 function createOutputCapture(runtime, options) {
@@ -163,6 +257,7 @@ function createOutputCapture(runtime, options) {
 
   return {
     lines,
+    controls,
     wasCancelled() {
       return cancelled;
     },
@@ -182,100 +277,63 @@ function createOutputCapture(runtime, options) {
   };
 }
 
-class RuntimeSlot {
-  constructor(sourcePromise) {
-    this.sourcePromise = sourcePromise;
-    this.runtimePromise = null;
-    this.busy = false;
+function createRatingCapture(runtime, options, controls) {
+  const { onRating, includeSolution } = options;
+  if (!onRating) {
+    return null;
   }
 
-  async getRuntime() {
-    if (!this.runtimePromise) {
-      this.runtimePromise = this.sourcePromise.then((runtimeSource) => instantiateRuntime(runtimeSource));
-    }
-
-    return this.runtimePromise;
-  }
-}
-
-class RuntimePool {
-  constructor(size) {
-    if (!Number.isInteger(size) || size < 1) {
-      throw new RangeError('Runtime pool size must be a positive integer');
-    }
-
-    this.sourcePromise = loadRuntimeSource();
-    this.slots = Array.from({ length: size }, () => new RuntimeSlot(this.sourcePromise));
-    this.waiters = [];
-    this.disposed = false;
+  const runtimeRatingStream = runtime?.TeaVMRatingStream;
+  if (typeof runtimeRatingStream?.setHandler !== 'function') {
+    throw new Error('TeaVMRatingStream.setHandler is unavailable in this bundle. Rebuild HoDoKu and refresh Hodoku-teavm.cjs.');
   }
 
-  async executeCommand(commandParts, onNewLineOrOptions) {
-    if (this.disposed) {
-      throw new Error('Runtime pool has been disposed');
-    }
+  const originalHandler = typeof runtimeRatingStream.getHandler === 'function'
+    ? runtimeRatingStream.getHandler()
+    : null;
+  const originalIncludeSolution = typeof runtimeRatingStream.isIncludeSolution === 'function'
+    ? runtimeRatingStream.isIncludeSolution()
+    : false;
 
-    const normalizedCommandParts = normalizeCommandParts(commandParts);
-    const slot = await this.acquireSlot();
-    let replaceRuntime = false;
-
-    try {
-      const runtime = await slot.getRuntime();
-      const result = await executeCommandWithRuntime(runtime, normalizedCommandParts, onNewLineOrOptions);
-      replaceRuntime = result.cancelled;
-      return result.lines;
-    } catch (error) {
-      replaceRuntime = true;
-      throw error;
-    } finally {
-      this.releaseSlot(slot, replaceRuntime);
-    }
+  if (typeof runtimeRatingStream.setIncludeSolution === 'function') {
+    runtimeRatingStream.setIncludeSolution(includeSolution);
   }
 
-  dispose() {
-    if (this.disposed) {
-      return;
+  runtimeRatingStream.setHandler((puzzle, puzzleNumber, difficulty, score, givenUp, bruteForced, unsolvable, solution) => {
+    const rating = {
+      puzzle: typeof puzzle === 'string' ? puzzle : String(puzzle),
+      puzzleNumber: Number(puzzleNumber),
+      difficulty: typeof difficulty === 'string' ? difficulty : String(difficulty),
+      score: Number(score),
+      givenUp: Boolean(givenUp),
+      bruteForced: Boolean(bruteForced),
+      unsolvable: Boolean(unsolvable),
+    };
+
+    if (typeof solution === 'string' && solution.length > 0) {
+      rating.solution = solution;
     }
 
-    this.disposed = true;
-    while (this.waiters.length > 0) {
-      const waiter = this.waiters.shift();
-      waiter.reject(new Error('Runtime pool has been disposed'));
-    }
-  }
+    const result = onRating(rating, controls);
 
-  async acquireSlot() {
-    const availableSlot = this.slots.find((slot) => !slot.busy);
-    if (availableSlot) {
-      availableSlot.busy = true;
-      return availableSlot;
+    if (result === false) {
+      controls.cancel();
     }
+  });
 
-    return new Promise((resolve, reject) => {
-      this.waiters.push({ resolve, reject });
-    });
-  }
+  return {
+    restore() {
+      if (typeof runtimeRatingStream.setIncludeSolution === 'function') {
+        runtimeRatingStream.setIncludeSolution(originalIncludeSolution);
+      }
 
-  releaseSlot(slot, replaceRuntime) {
-    if (this.disposed) {
-      return;
-    }
-
-    let releasedSlot = slot;
-    if (replaceRuntime) {
-      const slotIndex = this.slots.indexOf(slot);
-      releasedSlot = new RuntimeSlot(this.sourcePromise);
-      this.slots[slotIndex] = releasedSlot;
-    }
-
-    const nextWaiter = this.waiters.shift();
-    if (nextWaiter) {
-      releasedSlot.busy = true;
-      nextWaiter.resolve(releasedSlot);
-    } else {
-      releasedSlot.busy = false;
-    }
-  }
+      if (originalHandler == null) {
+        runtimeRatingStream.clearHandler();
+      } else {
+        runtimeRatingStream.setHandler(originalHandler);
+      }
+    },
+  };
 }
 
 async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewLineOrOptions) {
@@ -285,6 +343,7 @@ async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewL
   }
 
   const capture = createOutputCapture(runtime, options);
+  const ratingCapture = createRatingCapture(runtime, options, capture.controls);
 
   try {
     await new Promise((resolve, reject) => {
@@ -305,6 +364,9 @@ async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewL
       throw error;
     }
   } finally {
+    if (ratingCapture) {
+      ratingCapture.restore();
+    }
     capture.restore();
   }
 
@@ -312,6 +374,25 @@ async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewL
     lines: capture.lines,
     cancelled: capture.wasCancelled(),
   };
+}
+
+async function executeCommandRatingsWithRuntime(runtime, normalizedCommandParts, options) {
+  const ratings = [];
+  await executeCommandWithRuntime(runtime, normalizedCommandParts, {
+    onRating(rating, controls) {
+      ratings.push(rating);
+
+      if (options.onRating) {
+        return options.onRating(rating, controls);
+      }
+
+      return undefined;
+    },
+    includeSolution: options.includeSolution,
+    signal: options.signal,
+  });
+
+  return ratings;
 }
 
 function normalizeCommandPart(commandPart) {
@@ -335,10 +416,29 @@ function normalizeCommandParts(commandParts) {
   return commandParts.map((part) => normalizeCommandPart(part));
 }
 
-export function createRuntimePool(size) {
-  return new RuntimePool(size);
+async function withRuntime(action) {
+  const runtimeSource = await loadRuntimeSource();
+  const runtime = instantiateRuntime(runtimeSource);
+  return action(runtime);
 }
 
-export function createRuntime() {
-  return createRuntimePool(1);
+export async function rateSudokus(options, onRating) {
+  const normalizedCall = normalizeRateCall(options, onRating);
+  const commandParts = normalizeCommandParts(buildRatingCommandParts(normalizedCall));
+
+  return withRuntime((runtime) => executeCommandRatingsWithRuntime(runtime, commandParts, {
+    includeSolution: normalizedCall.includeSolution,
+    onRating: normalizedCall.onRating,
+    signal: normalizedCall.signal,
+  }));
 }
+
+export async function rateSudoku(options) {
+  const newOptions = {
+    ...options,
+    puzzles: [options.puzzle],
+  }
+  const ratings = await rateSudokus(newOptions);
+  return ratings.length > 0 ? ratings[0] : null;
+}
+

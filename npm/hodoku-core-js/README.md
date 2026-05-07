@@ -22,63 +22,49 @@ npm install hodoku-core-js
 ## API
 
 ```js
-import { createRuntime, createRuntimePool } from 'hodoku-core-js';
+import { rateSudokus } from 'hodoku-core-js';
 
-const runtime = createRuntime(); // or createRuntimePool(10) for multi runtimes
-
-// show commands
-const helpLines = await runtime.executeCommand(['/h']);
-console.log(helpLines);
-
-// Multi sudoku rating
-const batchLines = await runtime.executeCommand([
-  '/o',
-  'stdout',
+const puzzles = [
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
   '.....6....59.....82....8....45........3........6..3.54...325..6..................',
-]);
-console.log(batchLines);
+];
 
-// multi runtime
-const parallelPool = createRuntimePool(2);
-const [helpA, helpB] = await Promise.all([
-  parallelPool.executeCommand(['/h']),
-  parallelPool.executeCommand(['/h']),
-]);
-console.log(helpA[0], helpB[0]);
-parallelPool.dispose();
+const ratings = await rateSudokus({ puzzles });
+console.log(ratings);
 
-// give up at a given score
-const expertPuzzle = [ '.....5..44.17....2.2.1.4.8....36......7....5.......8..2....3.473..512....8.......']
-await runtime.executeCommand(['/o', 'stdout', '/ms', '1000', ...expertPuzzle], (line) => console.log(line))
-// output: .....5..44.17....2.2.1.4.8....36......7....5.......8..2....3.473..512....8....... #1 Extreme (1478) gu
+await rateSudokus({ puzzles, maxScore: 1000 }, (rating, control) => {
+  console.log(rating);
 
-// cancel execution at a given time
-await runtime.executeCommand(['/o', 'stdout', '/ms', '1000', ...expertPuzzle], (line) => {
-  if line === "specific line" return false
-})
-// output ["whatever", "lines", "before", "specific line"]
-// You can also pass `{ signal }` to request cancellation via an `AbortSignal`. 
-// Cancellation takes effect on the next emitted line.
+  if (rating.score > 900) {
+    control.cancel();
+  }
+});
 
-// cleaning
-runtime.dispose();
+const withSolution = await rateSudokus({
+  puzzles: [puzzles[0]],
+  includeSolution: true,
+  maxScore: 1000,
+});
+console.log(withSolution[0].solution);
 ```
 
 Available exports:
 
-- `createRuntime()`: Single runtime.
-- `createRuntimePool(size)`: creates a reusable pool of isolated TeaVM runtime instances. Each pool slot is locked while it is running a command.
+- `rateSudokus(options, onRating?)`: rates `options.puzzles`, optionally calls `onRating` for each emitted rating, and resolves with the collected ratings.
+
+Each emitted rating includes `givenUp`, `bruteForced`, and `unsolvable` booleans in addition to `puzzle`, `puzzleNumber`, `difficulty`, `score`, and optional `solution`.
+
+Each call creates a fresh isolated TeaVM runtime. That keeps handler state local to the call and avoids cross-request interference when callers run ratings concurrently.
 
 ## Accepted Puzzle Input
 
-When a command includes puzzle text, HoDoKu parses the puzzle input using the same formats accepted by the CLI, including:
+When a rating call includes puzzle text, HoDoKu parses the puzzle input using the same formats accepted by the CLI, including:
 
 - An 81-character grid using digits, `.` or `0`
 - HoDoKu library format
 - Other HoDoKu-supported single-puzzle text formats
 
-If more than one positional puzzle is passed, HoDoKu applies the grouped inline batch-solve mode automatically.
+If `options.puzzles` contains more than one puzzle, HoDoKu applies the grouped inline batch-solve mode automatically.
 
 ## Packaging Workflow
 
@@ -86,11 +72,13 @@ From the repository root:
 
 ```sh
 mvn clean package
-cd npm_recovered/hodoku-core-js
+cd npm/hodoku-core-js
+npm test
+npm run test:full
 npm pack --dry-run
 ```
 
-`npm pack` triggers `prepack`, which copies the generated TeaVM bundle from `target/teavm-js/Hodoku-teavm.js` into the package as `Hodoku-teavm.cjs`.
+`npm test` runs the fast default Jest suite: callback coverage, non-callback coverage, given-up coverage, solution coverage, and a tiny essential parity sample. `npm run test:full` enables the slower brute-force coverage and the full-dataset parity case, and can take several minutes. `npm pack` triggers `prepack`, which copies the generated TeaVM bundle from `target/teavm-js/Hodoku-teavm.js` into the package as `Hodoku-teavm.cjs` and runs the default suite.
 
 ## License
 
