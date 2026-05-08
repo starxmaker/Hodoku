@@ -681,12 +681,12 @@ function parseSolutionPathStep(line, stepNumber) {
   const text = line.trim();
   const separatorIndex = text.indexOf(':');
   const technique = separatorIndex === -1 ? text : text.slice(0, separatorIndex).trim();
-  const description = separatorIndex === -1 ? '' : text.slice(separatorIndex + 1).trim();
+  const notation = separatorIndex === -1 ? '' : text.slice(separatorIndex + 1).trim();
 
   return {
     stepNumber,
     technique,
-    description,
+    notation,
   };
 }
 

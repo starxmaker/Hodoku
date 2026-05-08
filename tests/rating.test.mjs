@@ -20,12 +20,12 @@ const BRUTE_FORCE_PUZZLE = '1000000020904000500060007000509030000000700000008500
 const MULTI_SOLUTION_GIVEN_UP_PUZZLE = '2957438614318659..8761925433874592166123874955492167387635241899286713541549386..';
 const NO_SOLUTION_PUZZLE = '110000000000000000000000000000000000000000000000000000000000000000000000000000000';
 const EASY_PUZZLE_FIRST_PATH_STEPS = [
-  { technique: 'Naked Single', description: 'r5c6=4' },
-  { technique: 'Naked Single', description: 'r9c4=4' },
-  { technique: 'Naked Single', description: 'r5c7=1' },
-  { technique: 'Naked Single', description: 'r5c3=9' },
-  { technique: 'Naked Single', description: 'r9c6=7' },
-  { technique: 'Full House', description: 'r1c6=1' },
+  { technique: 'Naked Single', notation: 'r5c6=4' },
+  { technique: 'Naked Single', notation: 'r9c4=4' },
+  { technique: 'Naked Single', notation: 'r5c7=1' },
+  { technique: 'Naked Single', notation: 'r5c3=9' },
+  { technique: 'Naked Single', notation: 'r9c6=7' },
+  { technique: 'Full House', notation: 'r1c6=1' },
 ];
 const expectedRatings = rawExpectedRatings.map(([puzzle, difficulty, score]) => ({
     puzzle,
@@ -166,7 +166,7 @@ describe('rating api', () => {
     expect(rating.steps).toHaveLength(49);
     expect(rating.steps.slice(0, EASY_PUZZLE_FIRST_PATH_STEPS.length).map((step) => ({
       technique: step.technique,
-      description: step.description,
+      notation: step.notation,
     }))).toEqual(EASY_PUZZLE_FIRST_PATH_STEPS);
     expect(rating.steps.some((step) => HODOKU_DIFFICULTIES.has(step.technique))).toBe(false);
 
@@ -176,7 +176,7 @@ describe('rating api', () => {
       expect(typeof step.technique).toBe('string');
       expect(step.technique.length).toBeGreaterThan(0);
       expect(HODOKU_TECHNIQUES.has(step.technique)).toBe(true);
-      expect(typeof step.description).toBe('string');
+      expect(typeof step.notation).toBe('string');
     }
   }, 60000);
 

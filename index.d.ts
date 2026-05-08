@@ -136,7 +136,7 @@ export interface BasePuzzle {
 export interface SudokuSolutionPathStep {
   stepNumber: number;
   technique: HodokuTechnique;
-  description: string;
+  notation: string;
 }
 
 export interface SudokuRating extends BaseSudokuRating, BasePuzzle {
