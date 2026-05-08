@@ -1,5 +1,120 @@
 const RUNTIME_BUNDLE_URL = new URL('./Hodoku-teavm.cjs', import.meta.url);
 const HODOKU_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard', 'Unfair', 'Extreme']);
+const HODOKU_TECHNIQUE_NAMES = [
+  'Full House',
+  'Hidden Single',
+  'Hidden Pair',
+  'Hidden Triple',
+  'Hidden Quadruple',
+  'Naked Single',
+  'Naked Pair',
+  'Naked Triple',
+  'Naked Quadruple',
+  'Locked Pair',
+  'Locked Triple',
+  'Locked Candidates',
+  'Locked Candidates Type 1 (Pointing)',
+  'Locked Candidates Type 2 (Claiming)',
+  'Skyscraper',
+  '2-String Kite',
+  'Uniqueness Test 1',
+  'Uniqueness Test 2',
+  'Uniqueness Test 3',
+  'Uniqueness Test 4',
+  'Uniqueness Test 5',
+  'Uniqueness Test 6',
+  'Bivalue Universal Grave + 1',
+  'XY-Wing',
+  'XYZ-Wing',
+  'W-Wing',
+  'X-Chain',
+  'XY-Chain',
+  'Remote Pair',
+  'Nice Loop/AIC',
+  'Continuous Nice Loop',
+  'Discontinuous Nice Loop',
+  'X-Wing',
+  'Swordfish',
+  'Jellyfish',
+  'Squirmbag',
+  'Whale',
+  'Leviathan',
+  'Finned X-Wing',
+  'Finned Swordfish',
+  'Finned Jellyfish',
+  'Finned Squirmbag',
+  'Finned Whale',
+  'Finned Leviathan',
+  'Sashimi X-Wing',
+  'Sashimi Swordfish',
+  'Sashimi Jellyfish',
+  'Sashimi Squirmbag',
+  'Sashimi Whale',
+  'Sashimi Leviathan',
+  'Franken X-Wing',
+  'Franken Swordfish',
+  'Franken Jellyfish',
+  'Franken Squirmbag',
+  'Franken Whale',
+  'Franken Leviathan',
+  'Finned Franken X-Wing',
+  'Finned Franken Swordfish',
+  'Finned Franken Jellyfish',
+  'Finned Franken Squirmbag',
+  'Finned Franken Whale',
+  'Finned Franken Leviathan',
+  'Mutant X-Wing',
+  'Mutant Swordfish',
+  'Mutant Jellyfish',
+  'Mutant Squirmbag',
+  'Mutant Whale',
+  'Mutant Leviathan',
+  'Finned Mutant X-Wing',
+  'Finned Mutant Swordfish',
+  'Finned Mutant Jellyfish',
+  'Finned Mutant Squirmbag',
+  'Finned Mutant Whale',
+  'Finned Mutant Leviathan',
+  'Sue de Coq',
+  'Almost Locked Set XZ-Rule',
+  'Almost Locked Set XY-Wing',
+  'Almost Locked Set XY-Chain',
+  'Death Blossom',
+  'Template Set',
+  'Template Delete',
+  'Forcing Chain',
+  'Forcing Chain Contradiction',
+  'Forcing Chain Verity',
+  'Forcing Net',
+  'Forcing Net Contradiction',
+  'Forcing Net Verity',
+  'Brute Force',
+  'Incomplete Solution',
+  'Give Up',
+  'Grouped Nice Loop/AIC',
+  'Grouped Continuous Nice Loop',
+  'Grouped Discontinuous Nice Loop',
+  'Empty Rectangle',
+  'Hidden Rectangle',
+  'Avoidable Rectangle Type 1',
+  'Avoidable Rectangle Type 2',
+  'AIC',
+  'Grouped AIC',
+  'Simple Colors',
+  'Multi Colors',
+  'Kraken Fish',
+  'Turbot Fish',
+  'Kraken Fish Type 1',
+  'Kraken Fish Type 2',
+  'Dual 2-String Kite',
+  'Dual Empty Rectangle',
+  'Simple Colors Trap',
+  'Simple Colors Wrap',
+  'Multi Colors 1',
+  'Multi Colors 2',
+];
+
+export const HODOKU_TECHNIQUES = new Set(HODOKU_TECHNIQUE_NAMES);
 
 let runtimeSourcePromise;
 
@@ -177,6 +292,10 @@ function normalizeRateOptions(options) {
     throw new TypeError('rateSudokus options must be an object');
   }
 
+  if (options.includePath !== undefined) {
+    throw new TypeError('includePath is only supported by rateSudoku');
+  }
+
   const {
     puzzles,
     includeSolution = false,
@@ -193,6 +312,38 @@ function normalizeRateOptions(options) {
   return {
     puzzles: normalizePuzzles(puzzles),
     includeSolution,
+    maxScore: normalizeMaxScore(maxScore),
+    signal,
+  };
+}
+
+function normalizeRateSudokuOptions(options) {
+  if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('rateSudoku options must be an object');
+  }
+
+  const {
+    puzzle,
+    includeSolution = false,
+    includePath = false,
+    maxScore,
+    signal,
+  } = options;
+
+  if (typeof includeSolution !== 'boolean') {
+    throw new TypeError('includeSolution must be a boolean');
+  }
+
+  if (typeof includePath !== 'boolean') {
+    throw new TypeError('includePath must be a boolean');
+  }
+
+  validateAbortSignal(signal);
+
+  return {
+    puzzle: normalizeCommandPart(puzzle),
+    includeSolution,
+    includePath,
     maxScore: normalizeMaxScore(maxScore),
     signal,
   };
@@ -268,6 +419,21 @@ function buildRatingCommandParts(options) {
   }
 
   return commandParts.concat(options.puzzles);
+}
+
+function buildSingleRatingCommandParts(options) {
+  const commandParts = ['/o', 'stdout'];
+
+  if (options.maxScore !== undefined) {
+    commandParts.push('/ms', String(options.maxScore));
+  }
+
+  if (options.includePath) {
+    commandParts.push('/vp');
+  }
+
+  commandParts.push(options.puzzle);
+  return commandParts;
 }
 
 function createOutputCapture(runtime, options) {
@@ -511,6 +677,55 @@ async function executeCommandRatingsWithRuntime(runtime, normalizedCommandParts,
   return ratings;
 }
 
+function parseSolutionPathStep(line, stepNumber) {
+  const text = line.trim();
+  const separatorIndex = text.indexOf(':');
+  const technique = separatorIndex === -1 ? text : text.slice(0, separatorIndex).trim();
+  const description = separatorIndex === -1 ? '' : text.slice(separatorIndex + 1).trim();
+
+  return {
+    stepNumber,
+    technique,
+    description,
+  };
+}
+
+function isSolutionPathStep(line) {
+  const text = line.trim();
+  const separatorIndex = text.indexOf(':');
+  if (separatorIndex === -1) {
+    return false;
+  }
+
+  const technique = text.slice(0, separatorIndex).trim();
+  return HODOKU_TECHNIQUES.has(technique);
+}
+
+async function executeSingleRatingWithRuntime(runtime, options) {
+  const normalizedCommandParts = normalizeCommandParts(buildSingleRatingCommandParts(options));
+  let rating = null;
+
+  const result = await executeCommandWithRuntime(runtime, normalizedCommandParts, {
+    onRating(emittedRating) {
+      rating = emittedRating;
+    },
+    includeSolution: options.includeSolution,
+    signal: options.signal,
+  });
+
+  if (rating == null) {
+    return null;
+  }
+
+  if (options.includePath) {
+    rating.steps = result.lines
+      .filter((line) => line.startsWith('   ') && isSolutionPathStep(line))
+      .map((line, index) => parseSolutionPathStep(line, index + 1));
+  }
+
+  return rating;
+}
+
 async function executeGenerateWithRuntime(runtime, options) {
   if (options.signal?.aborted) {
     return [];
@@ -607,11 +822,8 @@ export async function rateSudokus(options, onRating) {
 }
 
 export async function rateSudoku(options) {
-  const newOptions = {
-    ...options,
-    puzzles: [options.puzzle],
-  }
-  const ratings = await rateSudokus(newOptions);
-  return ratings.length > 0 ? ratings[0] : null;
+  const normalizedOptions = normalizeRateSudokuOptions(options);
+
+  return withRuntime((runtime) => executeSingleRatingWithRuntime(runtime, normalizedOptions));
 }
 

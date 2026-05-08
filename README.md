@@ -15,7 +15,7 @@ npm install hodoku-core-js
 ## API
 
 ```js
-import { generateSudokus, rateSudokus } from 'hodoku-core-js';
+import { generateSudokus, rateSudoku, rateSudokus } from 'hodoku-core-js';
 
 const puzzles = [
   '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79',
@@ -40,6 +40,12 @@ const withSolution = await rateSudokus({
 });
 console.log(withSolution[0].solution);
 
+const ratedSingle = await rateSudoku({
+  puzzle: puzzles[0],
+  includePath: true,
+});
+console.log(ratedSingle.steps[0]);
+
 const generated = await generateSudokus(
   { quantity: 2, difficulty: 'Easy', maxScore: 800 },
   (sudoku, control) => {
@@ -56,6 +62,8 @@ console.log(generated[0].solution);
 Available exports:
 
 - `generateSudokus(options, onGenerated?)`: generates `options.quantity` puzzles when provided, or keeps generating until cancellation when `quantity` is omitted. It optionally filters by `difficulty`, `minScore`, and `maxScore`, streams each `GeneratedSudoku`, and resolves with the collected results.
+- `HODOKU_TECHNIQUES`: a set containing the canonical HoDoKu technique names used by `steps[].technique`.
+- `rateSudoku(options)`: rates one puzzle and can include the original HoDoKu `/vp` solution path as `steps` when `includePath` is set.
 - `rateSudokus(options, onRating?)`: rates `options.puzzles`, optionally calls `onRating` for each emitted rating, and resolves with the collected ratings.
 
 Each emitted rating includes `givenUp`, `bruteForced`, and `unsolvable` booleans in addition to `puzzle`, `puzzleNumber`, `difficulty`, `score`, and optional `solution`.

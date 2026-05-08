@@ -1,4 +1,6 @@
-import { rateSudokus, rateSudoku } from '../index.js';
+import { HODOKU_TECHNIQUES, rateSudokus, rateSudoku } from '../index.js';
+
+const HODOKU_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard', 'Unfair', 'Extreme']);
 
 const rawExpectedRatings = [
     ["43...7.2..1.3.9.4...725..6.95....6...6.........2.............73.41.6.9..57.9.....","Easy",220],
@@ -17,6 +19,14 @@ const EASY_PUZZLE = '00302060090030500100180640000810290070000000800670820000260
 const BRUTE_FORCE_PUZZLE = '100000002090400050006000700050903000000070000000850040700000600030009080002000001';
 const MULTI_SOLUTION_GIVEN_UP_PUZZLE = '2957438614318659..8761925433874592166123874955492167387635241899286713541549386..';
 const NO_SOLUTION_PUZZLE = '110000000000000000000000000000000000000000000000000000000000000000000000000000000';
+const EASY_PUZZLE_FIRST_PATH_STEPS = [
+  { technique: 'Naked Single', description: 'r5c6=4' },
+  { technique: 'Naked Single', description: 'r9c4=4' },
+  { technique: 'Naked Single', description: 'r5c7=1' },
+  { technique: 'Naked Single', description: 'r5c3=9' },
+  { technique: 'Naked Single', description: 'r9c6=7' },
+  { technique: 'Full House', description: 'r1c6=1' },
+];
 const expectedRatings = rawExpectedRatings.map(([puzzle, difficulty, score]) => ({
     puzzle,
     difficulty,
@@ -140,6 +150,46 @@ describe('rating api', () => {
     expect(typeof rating.solution).toBe('string');
     expect(rating.solution).toHaveLength(81);
     expect(rating.solution).toMatch(/^[1-9]{81}$/);
+  });
+
+  test('includes the verbose solution path for single sudoku ratings', async () => {
+    const rating = await rateSudoku({
+      puzzle: EASY_PUZZLE,
+      includePath: true,
+    });
+
+    expect(Array.isArray(rating.steps)).toBe(true);
+    expect(rating.steps.length).toBeGreaterThan(0);
+    expect(rating.steps[0]).toMatchObject({
+      stepNumber: 1,
+    });
+    expect(rating.steps).toHaveLength(49);
+    expect(rating.steps.slice(0, EASY_PUZZLE_FIRST_PATH_STEPS.length).map((step) => ({
+      technique: step.technique,
+      description: step.description,
+    }))).toEqual(EASY_PUZZLE_FIRST_PATH_STEPS);
+    expect(rating.steps.some((step) => HODOKU_DIFFICULTIES.has(step.technique))).toBe(false);
+
+    for (let index = 0; index < rating.steps.length; index += 1) {
+      const step = rating.steps[index];
+      expect(step.stepNumber).toBe(index + 1);
+      expect(typeof step.technique).toBe('string');
+      expect(step.technique.length).toBeGreaterThan(0);
+      expect(HODOKU_TECHNIQUES.has(step.technique)).toBe(true);
+      expect(typeof step.description).toBe('string');
+    }
+  }, 60000);
+
+  test('exports the HoDoKu technique set', () => {
+    expect(HODOKU_TECHNIQUES.has('Naked Single')).toBe(true);
+    expect(HODOKU_TECHNIQUES.has('Kraken Fish Type 2')).toBe(true);
+    expect(HODOKU_TECHNIQUES.has('Easy')).toBe(false);
+  });
+
+  test('rejects includePath in batch ratings', async () => {
+    await expect(rateSudokus({ puzzles: [EASY_PUZZLE], includePath: true })).rejects.toThrow(
+      'includePath is only supported by rateSudoku',
+    );
   });
 
   test.each(expectedRatings)('parity check: puzzle $puzzle, difficulty $difficulty, score $score', async ({ puzzle, difficulty, score }) => {
