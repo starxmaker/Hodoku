@@ -115,6 +115,13 @@ export type HodokuTechnique =
 
 export declare const HODOKU_TECHNIQUES: ReadonlySet<HodokuTechnique>;
 
+export type StepAction = {
+  type: 'set' | 'eliminate';
+  row: number;
+  col: number;
+  value: number;
+}
+
 export interface RatingControl {
   cancel(): void;
   readonly cancelled: boolean;
@@ -137,6 +144,7 @@ export interface SudokuSolutionPathStep {
   stepNumber: number;
   technique: HodokuTechnique;
   notation: string;
+  actions: StepAction[];
 }
 
 export interface SudokuRating extends BaseSudokuRating, BasePuzzle {

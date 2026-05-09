@@ -618,6 +618,58 @@ function createGenerationCapture(runtime, onGenerated, controls) {
   };
 }
 
+function parseSolutionPathActions(actionsJson) {
+  if (typeof actionsJson !== 'string' || actionsJson.length === 0) {
+    return [];
+  }
+
+  const parsedActions = JSON.parse(actionsJson);
+  if (!Array.isArray(parsedActions)) {
+    throw new Error('Solution path actions must decode to an array.');
+  }
+
+  return parsedActions.map((action) => ({
+    type: action.type,
+    row: Number(action.row),
+    col: Number(action.col),
+    value: Number(action.value),
+  }));
+}
+
+function createSolutionPathCapture(runtime, onStep) {
+  const runtimeSolutionPathStream = runtime?.TeaVMSolutionPathStream;
+  if (typeof runtimeSolutionPathStream?.setHandler !== 'function') {
+    throw new Error('TeaVMSolutionPathStream.setHandler is unavailable in this bundle. Rebuild HoDoKu and refresh Hodoku-teavm.cjs.');
+  }
+
+  const originalHandler = typeof runtimeSolutionPathStream.getHandler === 'function'
+    ? runtimeSolutionPathStream.getHandler()
+    : null;
+
+  runtimeSolutionPathStream.setHandler((technique, notation, actionsJson) => {
+    const normalizedTechnique = typeof technique === 'string' ? technique : String(technique);
+    if (!HODOKU_TECHNIQUES.has(normalizedTechnique)) {
+      throw new Error(`Unknown HoDoKu technique emitted by runtime: ${normalizedTechnique}`);
+    }
+
+    onStep({
+      technique: normalizedTechnique,
+      notation: typeof notation === 'string' ? notation : String(notation),
+      actions: parseSolutionPathActions(actionsJson),
+    });
+  });
+
+  return {
+    restore() {
+      if (originalHandler == null) {
+        runtimeSolutionPathStream.clearHandler();
+      } else {
+        runtimeSolutionPathStream.setHandler(originalHandler);
+      }
+    },
+  };
+}
+
 async function executeCommandWithRuntime(runtime, normalizedCommandParts, onNewLineOrOptions) {
   const options = normalizeExecuteOptions(onNewLineOrOptions);
   if (options.signal?.aborted) {
@@ -677,31 +729,57 @@ async function executeCommandRatingsWithRuntime(runtime, normalizedCommandParts,
   return ratings;
 }
 
-function parseSolutionPathStep(line, stepNumber) {
-  const text = line.trim();
-  const separatorIndex = text.indexOf(':');
-  const technique = separatorIndex === -1 ? text : text.slice(0, separatorIndex).trim();
-  const notation = separatorIndex === -1 ? '' : text.slice(separatorIndex + 1).trim();
+async function executeSingleRatingWithRuntime(runtime, options) {
+  if (options.includePath) {
+    if (options.signal?.aborted) {
+      return null;
+    }
 
-  return {
-    stepNumber,
-    technique,
-    notation,
-  };
-}
+    let rating = null;
+    const steps = [];
+    const capture = createOutputCapture(runtime, { signal: options.signal });
+    const ratingCapture = createRatingCapture(runtime, {
+      includeSolution: options.includeSolution,
+      onRating(emittedRating) {
+        rating = emittedRating;
+      },
+    }, capture.controls);
+    const solutionPathCapture = createSolutionPathCapture(runtime, (step) => {
+      steps.push({
+        stepNumber: steps.length + 1,
+        ...step,
+      });
+    });
 
-function isSolutionPathStep(line) {
-  const text = line.trim();
-  const separatorIndex = text.indexOf(':');
-  if (separatorIndex === -1) {
-    return false;
+    try {
+      const runtimeRater = runtime?.TeaVMRater;
+      if (typeof runtimeRater?.rateSudoku !== 'function') {
+        throw new Error('TeaVMRater.rateSudoku is unavailable in this bundle. Rebuild HoDoKu and refresh Hodoku-teavm.cjs.');
+      }
+
+      try {
+        runtimeRater.rateSudoku(options.puzzle, options.maxScore ?? -1, true);
+      } catch (error) {
+        if (!capture.wasCancelled()) {
+          throw error;
+        }
+      }
+    } finally {
+      solutionPathCapture.restore();
+      if (ratingCapture) {
+        ratingCapture.restore();
+      }
+      capture.restore();
+    }
+
+    if (rating == null) {
+      return null;
+    }
+
+    rating.steps = steps;
+    return rating;
   }
 
-  const technique = text.slice(0, separatorIndex).trim();
-  return HODOKU_TECHNIQUES.has(technique);
-}
-
-async function executeSingleRatingWithRuntime(runtime, options) {
   const normalizedCommandParts = normalizeCommandParts(buildSingleRatingCommandParts(options));
   let rating = null;
 
@@ -715,12 +793,6 @@ async function executeSingleRatingWithRuntime(runtime, options) {
 
   if (rating == null) {
     return null;
-  }
-
-  if (options.includePath) {
-    rating.steps = result.lines
-      .filter((line) => line.startsWith('   ') && isSolutionPathStep(line))
-      .map((line, index) => parseSolutionPathStep(line, index + 1));
   }
 
   return rating;

@@ -20,13 +20,38 @@ const BRUTE_FORCE_PUZZLE = '1000000020904000500060007000509030000000700000008500
 const MULTI_SOLUTION_GIVEN_UP_PUZZLE = '2957438614318659..8761925433874592166123874955492167387635241899286713541549386..';
 const NO_SOLUTION_PUZZLE = '110000000000000000000000000000000000000000000000000000000000000000000000000000000';
 const EASY_PUZZLE_FIRST_PATH_STEPS = [
-  { technique: 'Naked Single', notation: 'r5c6=4' },
-  { technique: 'Naked Single', notation: 'r9c4=4' },
-  { technique: 'Naked Single', notation: 'r5c7=1' },
-  { technique: 'Naked Single', notation: 'r5c3=9' },
-  { technique: 'Naked Single', notation: 'r9c6=7' },
-  { technique: 'Full House', notation: 'r1c6=1' },
+  {
+    technique: 'Naked Single',
+    notation: 'r5c6=4',
+    actions: [{ type: 'set', row: 5, col: 6, value: 4 }],
+  },
+  {
+    technique: 'Naked Single',
+    notation: 'r9c4=4',
+    actions: [{ type: 'set', row: 9, col: 4, value: 4 }],
+  },
+  {
+    technique: 'Naked Single',
+    notation: 'r5c7=1',
+    actions: [{ type: 'set', row: 5, col: 7, value: 1 }],
+  },
+  {
+    technique: 'Naked Single',
+    notation: 'r5c3=9',
+    actions: [{ type: 'set', row: 5, col: 3, value: 9 }],
+  },
+  {
+    technique: 'Naked Single',
+    notation: 'r9c6=7',
+    actions: [{ type: 'set', row: 9, col: 6, value: 7 }],
+  },
+  {
+    technique: 'Full House',
+    notation: 'r1c6=1',
+    actions: [{ type: 'set', row: 1, col: 6, value: 1 }],
+  },
 ];
+const ACTIONS_PUZZLE = '...15........86.5...74..8.13..6.4..58.1..97....2.......9..38..........6.......3.9';
 const expectedRatings = rawExpectedRatings.map(([puzzle, difficulty, score]) => ({
     puzzle,
     difficulty,
@@ -167,6 +192,7 @@ describe('rating api', () => {
     expect(rating.steps.slice(0, EASY_PUZZLE_FIRST_PATH_STEPS.length).map((step) => ({
       technique: step.technique,
       notation: step.notation,
+      actions: step.actions,
     }))).toEqual(EASY_PUZZLE_FIRST_PATH_STEPS);
     expect(rating.steps.some((step) => HODOKU_DIFFICULTIES.has(step.technique))).toBe(false);
 
@@ -177,7 +203,26 @@ describe('rating api', () => {
       expect(step.technique.length).toBeGreaterThan(0);
       expect(HODOKU_TECHNIQUES.has(step.technique)).toBe(true);
       expect(typeof step.notation).toBe('string');
+      expect(Array.isArray(step.actions)).toBe(true);
+      for (const action of step.actions) {
+        expect(action.type === 'set' || action.type === 'eliminate').toBe(true);
+        expect(Number.isInteger(action.row)).toBe(true);
+        expect(Number.isInteger(action.col)).toBe(true);
+        expect(Number.isInteger(action.value)).toBe(true);
+      }
     }
+  }, 60000);
+
+  test('includes eliminate actions for non-single path steps', async () => {
+    const rating = await rateSudoku({
+      puzzle: ACTIONS_PUZZLE,
+      includePath: true,
+    });
+
+    const eliminationStep = rating.steps.find((step) => step.actions.some((action) => action.type === 'eliminate'));
+
+    expect(eliminationStep).toBeDefined();
+    expect(eliminationStep.actions.every((action) => action.type === 'eliminate')).toBe(true);
   }, 60000);
 
   test('exports the HoDoKu technique set', () => {

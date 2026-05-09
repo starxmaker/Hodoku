@@ -66,6 +66,8 @@ Available exports:
 - `rateSudoku(options)`: rates one puzzle and can include the original HoDoKu `/vp` solution path as `steps` when `includePath` is set.
 - `rateSudokus(options, onRating?)`: rates `options.puzzles`, optionally calls `onRating` for each emitted rating, and resolves with the collected ratings.
 
+When `includePath` is enabled, each step includes `notation` and `actions`, where each action is either a set or eliminate mutation with 1-based `row` and `col` coordinates.
+
 Each emitted rating includes `givenUp`, `bruteForced`, and `unsolvable` booleans in addition to `puzzle`, `puzzleNumber`, `difficulty`, `score`, and optional `solution`.
 
 Each generated puzzle includes the same difficulty metadata plus the generated puzzle string and solved grid in `solution`.
