@@ -899,3 +899,86 @@ export async function rateSudoku(options) {
   return withRuntime((runtime) => executeSingleRatingWithRuntime(runtime, normalizedOptions));
 }
 
+
+
+const stringToGrid = (str) => {
+    const grid = [[]];
+    let currentRow = 0;
+    let candidateMode = false;
+    for (let i = 0; i < str.length; i++) {
+      if (grid[currentRow].length >= 9 && !candidateMode) {
+        grid.push([]);
+        currentRow++;
+      }
+      const char = str[i];
+      if (char === '.') {
+        grid[currentRow].push(null);
+      } else if (char === '{') {
+        candidateMode = true;
+        grid[currentRow].push(new Set());
+      } else if (char === '}') {
+        candidateMode = false;
+      } else if (candidateMode) {
+        const lastCell = grid[currentRow][grid[currentRow].length - 1];
+        if (lastCell instanceof Set) {
+          lastCell.add(Number(char));
+        } else {
+          throw new Error('Invalid candidate mode in puzzle string');
+        }
+      } else {
+        grid[currentRow].push(Number(char));
+      }
+    }
+    return grid;
+}
+
+const gridToString = (grid) => {
+    let str = '';
+    for (const row of grid) {
+        for (const cell of row) {
+            if (cell === null) {
+                str += '.';
+            } else if (cell instanceof Set) {
+                str += '{' + Array.from(cell).join('') + '}';
+            } else {
+                str += cell.toString();
+            }
+        }
+    }
+    return str;
+}
+
+export const applyActions = (puzzle, actions) => {
+    let solvingPuzzle = puzzle;
+    for (const action of actions) {
+        solvingPuzzle = applyAction(solvingPuzzle, action);
+    }
+    return solvingPuzzle;
+}
+
+export const applyAction = (puzzle, action) => {
+  const grid = stringToGrid(puzzle);
+  if (action.type === 'set') {
+      grid[action.row - 1][action.col - 1] = action.value;
+  } else if (action.type === 'eliminate') {
+      const cell = grid[action.row - 1][action.col - 1];
+      if (cell instanceof Set) {
+          cell.delete(action.value);
+      }
+  }
+  return gridToString(grid);
+}
+
+
+export function applySteps(puzzle, steps) {
+    let solvingPuzzle = puzzle
+    for (const step of steps) {
+        solvingPuzzle = applyStep(solvingPuzzle, step);
+    }
+    return solvingPuzzle;
+}
+
+export function applyStep(puzzle, step) {
+    return applyActions(puzzle, step.actions);
+}
+

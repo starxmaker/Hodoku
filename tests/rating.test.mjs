@@ -1,65 +1,63 @@
-import { HODOKU_TECHNIQUES, rateSudokus, rateSudoku } from '../index.js';
-
-const HODOKU_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard', 'Unfair', 'Extreme']);
-
-const rawExpectedRatings = [
-    ["43...7.2..1.3.9.4...725..6.95....6...6.........2.............73.41.6.9..57.9.....","Easy",220],
-    ["....3...9.6.75.........9.8...24.6...4...9..3....5..6.4.2..7.5..8........3..28....","Easy",452],
-    [".9.5.1..8....4.....1.6.2.......2..9............9..547.52....6.1.....854.4.8.....7","Medium",618],
-    ["1.97.5...7.2.......3..9..6........2........59...43......16..79..762......2..4...3","Medium",918],
-    [".3.9....826.3......9182.5........761....3...9....9..5.7...6.3.....5.1...........6","Medium",308],
-    ["..325.86.....9..3.856.734........7..9.2........8....4..2...65........98...4.3..2.","Extreme",1886],
-    ["98..4.1.6..4..2...6....3.548.215.........4.......9....4.6.......9..6...1..52.....","Unfair",1458],
-    [".549.....18....3...9..73....3...7.4......8...5.842.....7.3.2.98....8......35.41..","Hard",956],
-    ["......5....5...8926....8.3..4.8......8.67....76.3.2..5.......7...2.67..4...5..9..","Unfair",1394],
-    ["...8.2.6.7429......5.........9.8.4.........81...2.5...19.....5.4..79.6..6....1...","Hard",908]
-  ]
-
-const EASY_PUZZLE = '003020600900305001001806400008102900700000008006708200002609500800203009005010300';
-const BRUTE_FORCE_PUZZLE = '100000002090400050006000700050903000000070000000850040700000600030009080002000001';
-const MULTI_SOLUTION_GIVEN_UP_PUZZLE = '2957438614318659..8761925433874592166123874955492167387635241899286713541549386..';
-const NO_SOLUTION_PUZZLE = '110000000000000000000000000000000000000000000000000000000000000000000000000000000';
-const EASY_PUZZLE_FIRST_PATH_STEPS = [
-  {
-    technique: 'Naked Single',
-    notation: 'r5c6=4',
-    actions: [{ type: 'set', row: 5, col: 6, value: 4 }],
-  },
-  {
-    technique: 'Naked Single',
-    notation: 'r9c4=4',
-    actions: [{ type: 'set', row: 9, col: 4, value: 4 }],
-  },
-  {
-    technique: 'Naked Single',
-    notation: 'r5c7=1',
-    actions: [{ type: 'set', row: 5, col: 7, value: 1 }],
-  },
-  {
-    technique: 'Naked Single',
-    notation: 'r5c3=9',
-    actions: [{ type: 'set', row: 5, col: 3, value: 9 }],
-  },
-  {
-    technique: 'Naked Single',
-    notation: 'r9c6=7',
-    actions: [{ type: 'set', row: 9, col: 6, value: 7 }],
-  },
-  {
-    technique: 'Full House',
-    notation: 'r1c6=1',
-    actions: [{ type: 'set', row: 1, col: 6, value: 1 }],
-  },
-];
-const ACTIONS_PUZZLE = '...15........86.5...74..8.13..6.4..58.1..97....2.......9..38..........6.......3.9';
-const expectedRatings = rawExpectedRatings.map(([puzzle, difficulty, score]) => ({
-    puzzle,
-    difficulty,
-    score,
-    }));
-const SLOW_BRUTE_FORCE_TIMEOUT_MS = 360000;
+import { HODOKU_TECHNIQUES, rateSudokus, rateSudoku, applyStep } from '../index.js';
 
 describe('rating api', () => {
+  const HODOKU_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard', 'Unfair', 'Extreme']);
+  const rawExpectedRatings = [
+      ["43...7.2..1.3.9.4...725..6.95....6...6.........2.............73.41.6.9..57.9.....","Easy",220],
+      ["....3...9.6.75.........9.8...24.6...4...9..3....5..6.4.2..7.5..8........3..28....","Easy",452],
+      [".9.5.1..8....4.....1.6.2.......2..9............9..547.52....6.1.....854.4.8.....7","Medium",618],
+      ["1.97.5...7.2.......3..9..6........2........59...43......16..79..762......2..4...3","Medium",918],
+      [".3.9....826.3......9182.5........761....3...9....9..5.7...6.3.....5.1...........6","Medium",308],
+      ["..325.86.....9..3.856.734........7..9.2........8....4..2...65........98...4.3..2.","Extreme",1886],
+      ["98..4.1.6..4..2...6....3.548.215.........4.......9....4.6.......9..6...1..52.....","Unfair",1458],
+      [".549.....18....3...9..73....3...7.4......8...5.842.....7.3.2.98....8......35.41..","Hard",956],
+      ["......5....5...8926....8.3..4.8......8.67....76.3.2..5.......7...2.67..4...5..9..","Unfair",1394],
+      ["...8.2.6.7429......5.........9.8.4.........81...2.5...19.....5.4..79.6..6....1...","Hard",908]
+    ]
+
+  const EASY_PUZZLE = '003020600900305001001806400008102900700000008006708200002609500800203009005010300';
+  const BRUTE_FORCE_PUZZLE = '100000002090400050006000700050903000000070000000850040700000600030009080002000001';
+  const MULTI_SOLUTION_GIVEN_UP_PUZZLE = '2957438614318659..8761925433874592166123874955492167387635241899286713541549386..';
+  const NO_SOLUTION_PUZZLE = '110000000000000000000000000000000000000000000000000000000000000000000000000000000';
+  const EASY_PUZZLE_FIRST_PATH_STEPS = [
+    {
+      technique: 'Naked Single',
+      notation: 'r5c6=4',
+      actions: [{ type: 'set', row: 5, col: 6, value: 4 }],
+    },
+    {
+      technique: 'Naked Single',
+      notation: 'r9c4=4',
+      actions: [{ type: 'set', row: 9, col: 4, value: 4 }],
+    },
+    {
+      technique: 'Naked Single',
+      notation: 'r5c7=1',
+      actions: [{ type: 'set', row: 5, col: 7, value: 1 }],
+    },
+    {
+      technique: 'Naked Single',
+      notation: 'r5c3=9',
+      actions: [{ type: 'set', row: 5, col: 3, value: 9 }],
+    },
+    {
+      technique: 'Naked Single',
+      notation: 'r9c6=7',
+      actions: [{ type: 'set', row: 9, col: 6, value: 7 }],
+    },
+    {
+      technique: 'Full House',
+      notation: 'r1c6=1',
+      actions: [{ type: 'set', row: 1, col: 6, value: 1 }],
+    },
+  ];
+  const ACTIONS_PUZZLE = '...15........86.5...74..8.13..6.4..58.1..97....2.......9..38..........6.......3.9';
+  const expectedRatings = rawExpectedRatings.map(([puzzle, difficulty, score]) => ({
+      puzzle,
+      difficulty,
+      score,
+      }));
+  const SLOW_BRUTE_FORCE_TIMEOUT_MS = 360000;
   test('calls the handler and collects the same ratings', async () => {
     const sample = expectedRatings.slice(0, 3);
     const callbackRatings = [];
@@ -247,4 +245,59 @@ describe('rating api', () => {
       unsolvable: false,
     });
   }, 10_000);
+});
+
+
+describe('candidate inline format', () => {
+  const INPUT_PUZZLE =
+    ".84923.1...3.5.8.2..2.8...3318.9..2.49.3.2.812.7418.3.83.2.{123456789}1.6.41.3927872.8.13..";
+  const OUTPUT_PUZZLE =
+    ".84923.1...3.5.8.2..2.8...3318.9..2.49.3.2.812.7418.3.83.2.{12356789}1.6.41.3927872.8.13..";
+
+  const ELIMINATION_STEP = {
+      stepNumber: 1,
+      technique: 'Locked Candidates Type 1 (Pointing)',
+      notation: '4  in b2 => r7c6<>4',
+      actions: [
+        { type: 'eliminate', row: 7, col: 6, value: 4 }],
+  };
+  test('Locked Candidates Type 1 (Pointing) appears when candidate 4 is present', async () => {
+    const rating = await rateSudoku({
+      puzzle: INPUT_PUZZLE,
+      includePath: true,
+    });
+
+    expect(rating).not.toBeNull();
+    const firstStep = rating.steps[0];
+    expect(firstStep).toMatchObject({
+      stepNumber: 1,
+      technique: 'Locked Candidates Type 1 (Pointing)',
+      notation: '4  in b2 => r7c6<>4',
+      actions: [
+        { type: 'eliminate', row: 7, col: 6, value: 4 }],
+    });
+  });
+
+  test('Locked Candidates Type 1 (Pointing) not needed when candidate 4 already removed', async () => {
+    const rating = await rateSudoku({
+      puzzle: OUTPUT_PUZZLE,
+      includePath: true,
+    });
+
+    expect(rating).not.toBeNull();
+    const firstStep = rating.steps[0];
+    expect(firstStep).not.toMatchObject(ELIMINATION_STEP);
+    expect(firstStep.stepNumber).toBe(1);
+  });
+
+  test('Applying step should remove candidate', async () => {
+    const newPuzzle = applyStep(INPUT_PUZZLE, ELIMINATION_STEP);
+    expect(newPuzzle).toBe(OUTPUT_PUZZLE);
+  });
+
+  test('No-OP if the candidate has already been removed', async () => {
+    const newPuzzle = applyStep(OUTPUT_PUZZLE, ELIMINATION_STEP);
+    expect(newPuzzle).toBe(OUTPUT_PUZZLE);
+  });
+  
 });

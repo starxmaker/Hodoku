@@ -601,6 +601,13 @@ public class Sudoku2 implements Cloneable {
 			}
 		}
 
+		// Check for candidate inline format: givens as plain digits,
+		// empty cells as '.' or '0', and candidate-only cells as {123} or {1,2,3}
+		if (init.contains("{")) {
+			parseCandidateInlineFormat(init, saveInitialState);
+			return;
+		}
+
 		// In the library format solved cells, that are not givens, can be marked with
 		// '+'
 		// solvedButNotGivens is initialized with 'false'
@@ -937,6 +944,84 @@ public class Sudoku2 implements Cloneable {
 		// we simply assume the sudoku is valid; for batch use, status
 		// is ignored and statusGivens has to be VALID (no checks ar made).
 		// for the GUI,status and statusGivens are checked elsewhere
+		status = SudokuStatus.VALID;
+		statusGivens = SudokuStatus.VALID;
+	}
+
+	/**
+	 * Parses a puzzle string in candidate inline format.
+	 * <ul>
+	 * <li>Plain digits 1-9 are treated as givens ({@code setCell})</li>
+	 * <li>{@code .} or {@code 0} are empty cells (auto-calculate candidates)</li>
+	 * <li>{@code {123}} or {@code {1,2,3}} means the cell has only those
+	 * candidates</li>
+	 * </ul>
+	 * After loading givens, {@link #rebuildAllCandidates()} is called, then
+	 * non-specified candidates are deleted from cells with {@code {cands}}.
+	 * 
+	 * @param init
+	 * @param saveInitialState
+	 */
+	private void parseCandidateInlineFormat(String init, boolean saveInitialState) {
+
+		boolean[][] candsToKeep = new boolean[LENGTH][UNITS + 1];
+
+		int cellIndex = 0;
+		int i = 0;
+
+		while (i < init.length() && cellIndex < LENGTH) {
+			char ch = init.charAt(i);
+			if (ch == '{') {
+				int end = init.indexOf('}', i);
+				if (end == -1) {
+					break;
+				}
+				if (end > i + 1) {
+					for (int j = i + 1; j < end; j++) {
+						char c = init.charAt(j);
+						if (c >= '1' && c <= '9') {
+							candsToKeep[cellIndex][c - '0'] = true;
+						}
+					}
+				}
+				i = end;
+				cellIndex++;
+			} else if (ch >= '1' && ch <= '9') {
+				setCell(cellIndex, ch - '0', true);
+				cellIndex++;
+			} else if (ch == '.' || ch == '0') {
+				cellIndex++;
+			}
+			i++;
+		}
+
+		rebuildAllCandidates();
+
+		for (int idx = 0; idx < LENGTH; idx++) {
+			if (values[idx] != 0) {
+				continue;
+			}
+			boolean hasCandSet = false;
+			for (int cand = 1; cand <= UNITS; cand++) {
+				if (candsToKeep[idx][cand]) {
+					hasCandSet = true;
+					break;
+				}
+			}
+			if (!hasCandSet) {
+				continue;
+			}
+			for (int cand = 1; cand <= UNITS; cand++) {
+				if (!candsToKeep[idx][cand]) {
+					setCandidate(idx, cand, false);
+				}
+			}
+		}
+
+		if (saveInitialState) {
+			setInitialState(getSudoku(ClipboardMode.LIBRARY));
+		}
+
 		status = SudokuStatus.VALID;
 		statusGivens = SudokuStatus.VALID;
 	}

@@ -185,6 +185,15 @@ export interface RateSudokusOptions extends BaseRateSudokuOptions {
 }
 
 export interface RateSudokuOptions extends BaseRateSudokuOptions {
+  /**
+   * Puzzle string. Formats:
+   * - 81-char string: digits 1-9 for givens, '.' or '0' for empty
+   * - HoDoKu library format: :type:score:81charPuzzle:cands::
+   * - PM grid / Simple Sudoku format
+   * - Candidate inline format: givens as plain digits, empty as '.'/'0',
+   *   candidate-only cells as {123} or {1,2,3}
+   *   Example: "{12}3.{19}2456..{78}.................."
+   */
   puzzle: string;
   includePath?: boolean;
 }
@@ -197,3 +206,11 @@ export declare function rateSudokus(
   options: RateSudokusOptions,
   onRating?: (rating: SudokuRating, control: RatingControl) => boolean | void,
 ): Promise<SudokuRating[]>;
+
+export declare function applySteps(puzzle: string, steps: SudokuSolutionPathStep[]): string;
+
+export declare function applyStep(puzzle: string, step: SudokuSolutionPathStep): string;
+
+export declare function applyAction(puzzle: string, action: StepAction): string;
+
+export declare function applyActions(puzzle: string, actions: StepAction[]): string;

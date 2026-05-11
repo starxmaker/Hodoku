@@ -78,7 +78,7 @@ Each call creates a fresh isolated TeaVM runtime. That keeps handler state local
 
 When a rating call includes puzzle text, HoDoKu parses the puzzle input using the same formats accepted by the CLI, including:
 
-- An 81-character grid using digits, `.` or `0`
+- An 81-character grid using digits, `.` or `0`. You can also specify candidates like `{123456789}`
 - HoDoKu library format
 - Other HoDoKu-supported single-puzzle text formats
 
